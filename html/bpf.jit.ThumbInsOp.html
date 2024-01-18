@@ -1,0 +1,128 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module ThumbInsOp</title>
+<meta name="description" content="Documentation of Coq module ThumbInsOp" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module ThumbInsOp</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html">Integers</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">Z_scope</span>.<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_EQ">COND_EQ</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x0</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_NE">COND_NE</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x1</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_CS">COND_CS</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x2</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_CC">COND_CC</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x3</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_MI">COND_MI</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x4</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_PL">COND_PL</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x5</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_VS">COND_VS</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x6</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_VC">COND_VC</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x7</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_HI">COND_HI</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x8</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_LS">COND_LS</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x9</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_GE">COND_GE</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xa</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_LT">COND_LT</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xb</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_GT">COND_GT</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xc</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_LE">COND_LE</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xd</span>.	<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="COND_AL">COND_AL</a></span>	:=	<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xe</span>.	<br/>
+<br/>
+<br/>
+<div class="doc">NB: the following declared instrutions is the final selected THUMB/THUMB2 ISA while our deocde supports more instructions </div>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="NOP_OP">NOP_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xbf00</span>.<br/>
+<br/>
+<h1> ALU </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ADD_R_OP">ADD_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x4400</span>.<br/>
+<br/>
+<div class="doc">- encoding T3
+ADD Rd, Rn, #imm12 (= i:imm3:imm8)
+ 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0     1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
+ 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0     5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+ --------------------------------    --------------------------------
+|1 1 1 1 0|i|0|1 0 0 0|S|  Rn   |   |0| imm3|  Rd   |  imm8         |
+ --------------------------------    -------------------------------- </div>
+<span class="kwd">Definition</span> <span class="id"><a name="ADD_I_OP">ADD_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf100</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="AND_R_OP">AND_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xea00</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="AND_I_OP">AND_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf000</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ASR_R_OP">ASR_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xfa40</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="CMP_R_OP">CMP_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x4500</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="CMP_I_OP">CMP_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf1b0</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="EOR_R_OP">EOR_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xea80</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="EOR_I_OP">EOR_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf080</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="LSL_R_OP">LSL_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xfa00</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="LSR_R_OP">LSR_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xfa20</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="MOVW_OP">MOVW_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf240</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="MOVT_OP">MOVT_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf2c0</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="MOV_R_OP">MOV_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x4600</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="MUL_OP">MUL_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xfb00</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ORR_R_OP">ORR_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xea40</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ORR_I_OP">ORR_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf040</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="SUB_R_OP">SUB_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xeba0</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="SUB_I_OP">SUB_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf1a0</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="RSB_R_OP">RSB_R_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xebc0</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="RSB_I_OP">RSB_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf1c0</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="UDIV_LO_OP">UDIV_LO_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xfbb0</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="UDIV_HI_OP">UDIV_HI_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf0f0</span>.<br/>
+<br/>
+<br/>
+<h1> Branch </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="BX_OP">BX_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x4700</span>.<br/>
+<br/>
+ <br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="B_OP_LOW">B_OP_LOW</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf000</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="B_OP_HI">B_OP_HI</a></span>  := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">x8000</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="BNE_0">BNE_0</a></span>  := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf040</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="BGE_0">BGE_0</a></span>  := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf280</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="BLT_0">BLT_0</a></span>  := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf2c0</span>.<br/>
+<br/>
+<br/>
+<h1> MEMORY </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="LDR_I_OP">LDR_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf8d0</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="STR_I_OP">STR_I_OP</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 0<span class="id">xf8c0</span>.<br/>
+<br/>
+<span class="id">Close</span> <span class="kwd">Scope</span> <span class="id">Z_scope</span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

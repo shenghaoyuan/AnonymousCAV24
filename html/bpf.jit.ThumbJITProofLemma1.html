@@ -1,0 +1,87 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module ThumbJITProofLemma1</title>
+<meta name="description" content="Documentation of Coq module ThumbJITProofLemma1" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module ThumbJITProofLemma1</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert.common</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">Values</span> <span class="id">Memory</span> <span class="id">AST</span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.lib</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">Integers</span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.arm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">AsmSyntax</span> <span class="id">ABinSem</span> <span class="id">BinDecode</span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">bpf.jit</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">ThumbJITProofSubMem</span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">List</span> <span class="id">ZArith</span> <span class="id">Lia</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">nat_scope</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">bool_scope</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">asm</span>.<br/>
+<span class="kwd">Import</span> <span class="id">ListNotations</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id">exec_line</span>:  <span class="id">list</span> <span class="id">int</span> -&gt; <span class="id">aregset</span> -&gt; <span class="id">astack</span> -&gt; <span class="id">block</span> -&gt; <span class="id">mem</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">list</span> <span class="id">int</span> -&gt; <span class="id">aregset</span> -&gt; <span class="id">astack</span> -&gt; <span class="id">block</span> -&gt; <span class="id">mem</span> -&gt; <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id">exec_line_one</span>: <span class="kwd">forall</span> <span class="id">jit_blk</span> <span class="id">st_blk</span> <span class="id">ofs</span> <span class="id">i</span> <span class="id">l</span> <span class="id">ars0</span> <span class="id">ars1</span> <span class="id">astk0</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m0</span> <span class="id">m1</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hfind</span>: <span class="id">Mem.loadv</span> <span class="id">Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">is_thumb2</span> <span class="id">i</span> = <span class="id">false</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decode_thumb</span> <span class="id">i</span> = <span class="id">Some</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hmem</span> : <span class="id">Mem.unchanged_on</span> (<span class="kwd">fun</span> (<span class="id">b</span> : <span class="id">block</span>) (<span class="id">_</span> : <span class="id">Z</span>) =&gt; <span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">st_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">astkb</span>) <span class="id">m0</span> <span class="id">m1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HMEM</span> : <span class="id">sub_mem_blk</span> <span class="id">l</span> <span class="id">m1</span> <span class="id">jit_blk</span> <span class="id">ofs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HPC</span>  : <span class="id">ars1</span>#<span class="id">PC</span> = <span class="id">aoffset_ptr</span> <span class="id">ars0</span>#<span class="id">PC</span> <span class="id">isize</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HEXEC</span>: <span class="id">aexec_instr</span> <span class="id">false</span> <span class="id">ins</span> <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span> = <span class="id">ANext</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exec_line</span> (<span class="id">i</span>:: <span class="id">l</span>) <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">l</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span><br/>
+<br/>
+&nbsp;&nbsp;| <span class="id">exec_line_two</span>: <span class="kwd">forall</span> <span class="id">jit_blk</span> <span class="id">st_blk</span> <span class="id">ofs</span> <span class="id">i0</span> <span class="id">i1</span> <span class="id">l</span> <span class="id">ars0</span> <span class="id">ars1</span> <span class="id">astk0</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m0</span> <span class="id">m1</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hfind</span>: <span class="id">Mem.loadv</span> <span class="id">AST.Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i0</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">is_thumb2</span> <span class="id">i0</span> = <span class="id">true</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Mem.loadv</span> <span class="id">Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Val.add</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) (<span class="id">Vint</span> (<span class="id">Int.repr</span> 2))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i1</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decode_thumb2</span> <span class="id">i0</span> <span class="id">i1</span> = <span class="id">Some</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hmem</span> : <span class="id">Mem.unchanged_on</span> (<span class="kwd">fun</span> (<span class="id">b</span> : <span class="id">block</span>) (<span class="id">_</span> : <span class="id">Z</span>) =&gt; <span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">st_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">astkb</span>) <span class="id">m0</span> <span class="id">m1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HMEM</span> : <span class="id">sub_mem_blk</span> <span class="id">l</span> <span class="id">m1</span> <span class="id">jit_blk</span> <span class="id">ofs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HPC</span>  : <span class="id">ars1</span>#<span class="id">PC</span> = <span class="id">aoffset_ptr</span> <span class="id">ars0</span>#<span class="id">PC</span> <span class="id">wsize</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HEXEC</span>: <span class="id">aexec_instr</span> <span class="id">true</span> <span class="id">ins</span> <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span> = <span class="id">ANext</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exec_line</span> (<span class="id">i0</span> :: <span class="id">i1</span> :: <span class="id">l</span>) <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">l</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span><br/>
+<br/>
+&nbsp;&nbsp;| <span class="id">exec_line_step_one</span>: <span class="kwd">forall</span> <span class="id">jit_blk</span> <span class="id">st_blk</span> <span class="id">ofs</span> <span class="id">i</span> <span class="id">l0</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">ars0</span> <span class="id">ars1</span> <span class="id">ars2</span> <span class="id">astk0</span> <span class="id">astk1</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m0</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hfind</span>: <span class="id">Mem.loadv</span> <span class="id">Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">is_thumb2</span> <span class="id">i</span> = <span class="id">false</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decode_thumb</span> <span class="id">i</span> = <span class="id">Some</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hmem</span> : <span class="id">Mem.unchanged_on</span> (<span class="kwd">fun</span> (<span class="id">b</span> : <span class="id">block</span>) (<span class="id">_</span> : <span class="id">Z</span>) =&gt; <span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">st_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">astkb</span>) <span class="id">m0</span> <span class="id">m1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HMEM</span> : <span class="id">sub_mem_blk</span> <span class="id">l0</span> <span class="id">m1</span> <span class="id">jit_blk</span> <span class="id">ofs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HPC</span>  : <span class="id">ars1</span>#<span class="id">PC</span> = <span class="id">aoffset_ptr</span> <span class="id">ars0</span>#<span class="id">PC</span> <span class="id">isize</span>)<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hline</span>: <span class="id">exec_line</span> <span class="id">l1</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span> <span class="id">l2</span> <span class="id">ars2</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m2</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exec_line</span> (<span class="id">i</span>:: <span class="id">l1</span>) <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">l2</span> <span class="id">ars2</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m2</span><br/>
+<br/>
+&nbsp;&nbsp;| <span class="id">exec_line_step_two</span>: <span class="kwd">forall</span> <span class="id">jit_blk</span> <span class="id">st_blk</span> <span class="id">ofs</span> <span class="id">i0</span> <span class="id">i1</span> <span class="id">l0</span> <span class="id">l1</span> <span class="id">l2</span> <span class="id">ars0</span> <span class="id">ars1</span> <span class="id">ars2</span> <span class="id">astk0</span> <span class="id">astk1</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m0</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hfind</span>: <span class="id">Mem.loadv</span> <span class="id">Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i0</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">is_thumb2</span> <span class="id">i0</span> = <span class="id">true</span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Mem.loadv</span> <span class="id">Mint16unsigned</span> <span class="id">m1</span> (<span class="id">Val.add</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Vptr</span> <span class="id">jit_blk</span> (<span class="id">Ptrofs.repr</span> (<span class="id">Z.of_nat</span> <span class="id">ofs</span>))) (<span class="id">Vint</span> (<span class="id">Int.repr</span> 2))) = <span class="id">Some</span> (<span class="id">Vint</span> <span class="id">i1</span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">decode_thumb2</span> <span class="id">i0</span> <span class="id">i1</span> = <span class="id">Some</span> <span class="id">ins</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hmem</span> : <span class="id">Mem.unchanged_on</span> (<span class="kwd">fun</span> (<span class="id">b</span> : <span class="id">block</span>) (<span class="id">_</span> : <span class="id">Z</span>) =&gt; <span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">st_blk</span> /\ <span class="id">b</span> &lt;&gt; <span class="id">astkb</span>) <span class="id">m0</span> <span class="id">m1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HMEM</span> : <span class="id">sub_mem_blk</span> <span class="id">l0</span> <span class="id">m1</span> <span class="id">jit_blk</span> <span class="id">ofs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HPC</span>  : <span class="id">ars1</span>#<span class="id">PC</span> = <span class="id">aoffset_ptr</span> <span class="id">ars0</span>#<span class="id">PC</span> <span class="id">wsize</span>)<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Hline</span>: <span class="id">exec_line</span> <span class="id">l1</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb</span> <span class="id">m1</span> <span class="id">l2</span> <span class="id">ars2</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m2</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">exec_line</span> (<span class="id">i0</span> :: <span class="id">i1</span> :: <span class="id">l1</span>) <span class="id">ars0</span> <span class="id">astk0</span> <span class="id">astkb</span> <span class="id">m0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">l2</span> <span class="id">ars2</span> <span class="id">astk2</span> <span class="id">astkb</span> <span class="id">m2</span>.
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

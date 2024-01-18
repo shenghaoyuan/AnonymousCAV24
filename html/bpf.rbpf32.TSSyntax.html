@@ -1,0 +1,451 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module TSSyntax</title>
+<meta name="description" content="Documentation of Coq module TSSyntax" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module TSSyntax</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert.lib</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Maps.html">Maps</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.common</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html">AST</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html">Values</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Globalenvs.html">Globalenvs</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html">Memory</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html">Events</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.cfrontend</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html">Ctypes</a></span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.FSets.FSetList.html">FSetList</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.ListSet.html">ListSet</a></span>.<br/>
+<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">Z_scope</span>.<br/>
+<span class="kwd">Import</span> <span class="id">ListNotations</span>.<br/>
+<br/>
+<h1> Abstract syntax </h1>
+<br/>
+<div class="doc">We model the following registers of the eBPF architecture. </div>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="breg">breg</a></span>: <span class="kwd">Type</span> := <span class="id"><a name="R0">R0</a></span> | <span class="id"><a name="R1">R1</a></span> | <span class="id"><a name="R2">R2</a></span> | <span class="id"><a name="R3">R3</a></span> | <span class="id"><a name="R4">R4</a></span> | <span class="id"><a name="R5">R5</a></span> | <span class="id"><a name="R6">R6</a></span> | <span class="id"><a name="R7">R7</a></span> | <span class="id"><a name="R8">R8</a></span> | <span class="id"><a name="R9">R9</a></span> | <span class="id"><a name="R10">R10</a></span> .<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="listset">listset</a></span> := <span class="tactic">set</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="z_of_breg">z_of_breg</a></span> (<span class="id">i</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">i</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R0">R0</a></span> =&gt; 0<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R1">R1</a></span> =&gt; 1<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R2">R2</a></span> =&gt; 2<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R3">R3</a></span> =&gt; 3<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R4">R4</a></span> =&gt; 4<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R5">R5</a></span> =&gt; 5<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R6">R6</a></span> =&gt; 6<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R7">R7</a></span> =&gt; 7<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R8">R8</a></span> =&gt; 8<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R9">R9</a></span> =&gt; 9<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R10">R10</a></span> =&gt; 10<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="breg_ltp">breg_ltp</a></span> (<span class="id">r1</span> <span class="id">r2</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>): <span class="kwd">Prop</span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.lt">Z.lt</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">r1</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">r2</span>).<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_lt_strorder">breg_lt_strorder</a></span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#StrictOrder">StrictOrder</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof1')">Proof.</div>
+<div class="proofscript" id="proof1">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>; <span class="tactic">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Irreflexive">Irreflexive</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Reflexive">Reflexive</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#complement">complement</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#Transitive">Transitive</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_lt_compat">breg_lt_compat</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.Morphisms.html#Proper">Proper</a></span> (@<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> ==&gt; @<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> ==&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#iff">iff</a></span>) <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2')">Proof.</div>
+<div class="proofscript" id="proof2">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>; <span class="tactic">constructor</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">subst</span>. <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">subst</span>. <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="breg_compare">breg_compare</a></span> (<span class="id">r1</span> <span class="id">r2</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#comparison">Datatypes.comparison</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.compare">Z.compare</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">r1</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">r2</span>).<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="z_of_breg_eq_iff">z_of_breg_eq_iff</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">x</span> = <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">y</span> &lt;-&gt; <span class="id">x</span> = <span class="id">y</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof3')">Proof.</div>
+<div class="proofscript" id="proof3">
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">x</span>; <span class="tactic">destruct</span> <span class="id">y</span>; (<span class="tactic">try</span> <span class="tactic">reflexivity</span>); <span class="tactic">inversion</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="z_of_breg_neq_iff">z_of_breg_neq_iff</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">x</span> &lt;&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">y</span> &lt;-&gt; <span class="id">x</span> &lt;&gt; <span class="id">y</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4')">Proof.</div>
+<div class="proofscript" id="proof4">
+&nbsp;&nbsp;<span class="tactic">split</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg_eq_iff">z_of_breg_eq_iff</a></span> <span class="kwd">in</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg_eq_iff">z_of_breg_eq_iff</a></span> <span class="kwd">in</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id">H</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_compare_spec">breg_compare_spec</a></span> : <span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#CompareSpec">CompareSpec</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id">x</span> <span class="id">y</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span> <span class="id">x</span> <span class="id">y</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span> <span class="id">y</span> <span class="id">x</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_compare">breg_compare</a></span> <span class="id">x</span> <span class="id">y</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5')">Proof.</div>
+<div class="proofscript" id="proof5">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_compare">breg_compare</a></span> <span class="id">eqn</span>: <span class="id">Hcmp</span>; <span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_compare">breg_compare</a></span> <span class="kwd">in</span> <span class="id">Hcmp</span>; <span class="tactic">constructor</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.compare_eq">Z.compare_eq</a></span> <span class="kwd">in</span> <span class="id">Hcmp</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg_eq_iff">z_of_breg_eq_iff</a></span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.compare_lt_iff">Z.compare_lt_iff</a></span> <span class="kwd">in</span> <span class="id">Hcmp</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.compare_gt_iff">Z.compare_gt_iff</a></span> <span class="kwd">in</span> <span class="id">Hcmp</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_eq">breg_eq</a></span>: <span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>), {<span class="id">x</span>=<span class="id">y</span>} + {<span class="id">x</span>&lt;&gt;<span class="id">y</span>}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6')">Proof.</div>
+<div class="proofscript" id="proof6">
+ <span class="id">decide</span> <span class="id">equality</span>. Defined.</div>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="BregOrderListSetType">BregOrderListSetType</a></span> &lt;: <span class="id"><a href="http://coq.inria.fr/library/Coq.Structures.Orders.html#OrderedType">Orders.OrderedType</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.t">t</a></span>  := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.eq">eq</a></span> := @<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#eq">eq</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.eq_equiv">eq_equiv</a></span> := @<span class="id"><a href="http://coq.inria.fr/library/Coq.Classes.RelationClasses.html#eq_equivalence">eq_equivalence</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.lt">lt</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_ltp">breg_ltp</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.lt_strorder">lt_strorder</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_lt_strorder">breg_lt_strorder</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.lt_compat">lt_compat</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_lt_compat">breg_lt_compat</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.compare">compare</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_compare">breg_compare</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.compare_spec">compare_spec</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_compare_spec">breg_compare_spec</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BregOrderListSetType.eq_dec">eq_dec</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eq">breg_eq</a></span>.<br/>
+<span class="kwd">End</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BregOrderListSetType">BregOrderListSetType</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="BregOrderListSet">BregOrderListSet</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.MSets.MSetList.html#MakeRaw">MSetList.MakeRaw</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BregOrderListSetType">BregOrderListSetType</a></span>).<br/>
+<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="breg_eqb">breg_eqb</a></span> (<span class="id">r</span> <span class="id">r</span>': <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">r</span>, <span class="id">r</span>' <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R0">R0</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R0">R0</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R1">R1</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R1">R1</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R2">R2</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R2">R2</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R3">R3</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R3">R3</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R4">R4</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R4">R4</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R5">R5</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R5">R5</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R6">R6</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R6">R6</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R7">R7</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R7">R7</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R8">R8</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R8">R8</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R9">R9</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R9">R9</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R10">R10</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R10">R10</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;| <span class="id">_</span>, <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_eqb_true">breg_eqb_true</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id">x</span> = <span class="id">y</span> &lt;-&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb">breg_eqb</a></span> <span class="id">x</span> <span class="id">y</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof7')">Proof.</div>
+<div class="proofscript" id="proof7">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_eqb_false">breg_eqb_false</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id">x</span> &lt;&gt; <span class="id">y</span> &lt;-&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb">breg_eqb</a></span> <span class="id">x</span> <span class="id">y</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof8')">Proof.</div>
+<div class="proofscript" id="proof8">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="breg_eqb_same">breg_eqb_same</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>,<span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb">breg_eqb</a></span> <span class="id">x</span> <span class="id">x</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof9')">Proof.</div>
+<div class="proofscript" id="proof9">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb_true">breg_eqb_true</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<div class="doc">We model the following registers of the eBPF architecture. </div>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="bpreg">bpreg</a></span> :=<br/>
+| <span class="id"><a name="BR">BR</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id">bpreg</span>  <span class="docright">(* integer registers  *)</span> <br/>
+| <span class="id"><a name="BPC">BPC</a></span> : <span class="id">bpreg</span>.         <span class="docright">(* program counter  *)</span><br/>
+<br/>
+<br/>
+<span class="kwd">Coercion</span> <span class="id">BR</span>: <span class="id">breg</span> &gt;-&gt; <span class="id">bpreg</span>. <br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="bpreg_eq">bpreg_eq</a></span>: <span class="kwd">forall</span> (<span class="id">x</span> <span class="id">y</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bpreg">bpreg</a></span>), {<span class="id">x</span>=<span class="id">y</span>} + {<span class="id">x</span>&lt;&gt;<span class="id">y</span>}.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof10')">Proof.</div>
+<div class="proofscript" id="proof10">
+ <span class="id">decide</span> <span class="id">equality</span>. <span class="tactic">apply</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eq">breg_eq</a></span>. <span class="comment">(*&nbsp;apply&nbsp;freg_eq.&nbsp;*)</span><br/>
+Defined.</div>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="BPregEq">BPregEq</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BPregEq.t">t</a></span>  := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bpreg">bpreg</a></span>.<br/>
+&nbsp;&nbsp;<span class="kwd">Definition</span> <span class="id"><a name="BPregEq.eq">eq</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bpreg_eq">bpreg_eq</a></span>.<br/>
+<span class="kwd">End</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPregEq">BPregEq</a></span>.<br/>
+<br/>
+<span class="kwd">Module</span> <span class="id"><a name="BPregmap">BPregmap</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Maps.html#EMap">EMap</a></span>(<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPregEq">BPregEq</a></span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="int_of_breg">int_of_breg</a></span> (<span class="id">i</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>): <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">i</span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="z_of_preg">z_of_preg</a></span> (<span class="id">r</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bpreg">bpreg</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">r</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BR">BR</a></span> <span class="id">i</span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_breg">z_of_breg</a></span> <span class="id">i</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> =&gt; 11 <br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">The instruction set.  Most instructions correspond exactly to
+  actual instructions of the eBPF instructions set. See the eBPF
+  reference manuals for more details.  Some instructions,
+  described below, are pseudo-instructions: they expand to
+  canned instruction sequences during the printing of the assembly
+  code. </div>
+<span class="kwd">Definition</span> <span class="id"><a name="off">off</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span>. <br/>
+<span class="kwd">Definition</span> <span class="id"><a name="imm">imm</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span>. <br/>
+<span class="kwd">Definition</span> <span class="id"><a name="label">label</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#positive">positive</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="aluOp">aluOp</a></span> : <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="ADD">ADD</a></span>   <span class="docright">(* dst += src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="SUB">SUB</a></span>   <span class="docright">(* dst -= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="MUL">MUL</a></span>   <span class="docright">(* dst *= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="DIV">DIV</a></span>   <span class="docright">(* dst /= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="OR">OR</a></span>    <span class="docright">(* dst |= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="AND">AND</a></span>   <span class="docright">(* dst &amp;= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="LSH">LSH</a></span>   <span class="docright">(* dst &lt;&lt;= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="RSH">RSH</a></span>   <span class="docright">(* dst &gt;&gt;= src (unsigned)  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="NEG">NEG</a></span>   <span class="docright">(* dst = ~src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="MOD">MOD</a></span>   <span class="docright">(* dst %= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="XOR">XOR</a></span>   <span class="docright">(* dst ^= src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="MOV">MOV</a></span>   <span class="docright">(* dst = src  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="ARSH">ARSH</a></span>. <span class="docright">(* dst &gt;&gt;= src (signed)  *)</span><br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="aluOp_eqb">aluOp_eqb</a></span> (<span class="id">op</span> <span class="id">op</span>': <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp">aluOp</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">op</span>, <span class="id">op</span>' <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ADD">ADD</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ADD">ADD</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#SUB">SUB</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#SUB">SUB</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MUL">MUL</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MUL">MUL</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#DIV">DIV</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#DIV">DIV</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#OR">OR</a></span>,  <span class="id"><a href="bpf.rbpf32.TSSyntax.html#OR">OR</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#AND">AND</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#AND">AND</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LSH">LSH</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LSH">LSH</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#RSH">RSH</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#RSH">RSH</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#NEG">NEG</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#NEG">NEG</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOD">MOD</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOD">MOD</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#XOR">XOR</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#XOR">XOR</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOV">MOV</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOV">MOV</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ARSH">ARSH</a></span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ARSH">ARSH</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span><br/>
+&nbsp;&nbsp;| <span class="id">_</span>, <span class="id">_</span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="aluOp_eqb_true">aluOp_eqb_true</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id">x</span> = <span class="id">y</span> &lt;-&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp_eqb">aluOp_eqb</a></span> <span class="id">x</span> <span class="id">y</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof11')">Proof.</div>
+<div class="proofscript" id="proof11">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="aluOp_eqb_false">aluOp_eqb_false</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span> <span class="id">y</span>, <span class="id">x</span> &lt;&gt; <span class="id">y</span> &lt;-&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp_eqb">aluOp_eqb</a></span> <span class="id">x</span> <span class="id">y</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof12')">Proof.</div>
+<div class="proofscript" id="proof12">
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">x</span>, <span class="id">y</span>; <span class="tactic">simpl</span>; <span class="tactic">intuition</span> <span class="tactic">congruence</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="aluOp_eqb_same">aluOp_eqb_same</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">x</span>, <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp_eqb">aluOp_eqb</a></span> <span class="id">x</span> <span class="id">x</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof13')">Proof.</div>
+<div class="proofscript" id="proof13">
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp_eqb_true">aluOp_eqb_true</a></span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cmpOp">cmpOp</a></span> : <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="EQ">EQ</a></span>: <span class="id">cmpOp</span>                <span class="docright">(* e1 == e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="NE">NE</a></span>: <span class="id">cmpOp</span>                <span class="docright">(* e1 != e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="SET">SET</a></span>: <span class="id">cmpOp</span>               <span class="docright">(* e1 &amp;  e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="GT">GT</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#signedness">signedness</a></span> -&gt; <span class="id">cmpOp</span>  <span class="docright">(* e1 &gt;  e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="GE">GE</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#signedness">signedness</a></span> -&gt; <span class="id">cmpOp</span>  <span class="docright">(* e1 &gt;= e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="LT">LT</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#signedness">signedness</a></span> -&gt; <span class="id">cmpOp</span>  <span class="docright">(* e1 &lt;  e2  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="LE">LE</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#signedness">signedness</a></span> -&gt; <span class="id">cmpOp</span>. <span class="docright">(* e1 &lt;= e2  *)</span><br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="sizeOp">sizeOp</a></span> : <span class="kwd">Type</span> :=<br/>
+<div class="doc">32 bits </div>
+| <span class="id"><a name="Byte">Byte</a></span>        <span class="docright">(* 1 byte  *)</span><br/>
+| <span class="id"><a name="HalfWord">HalfWord</a></span>    <span class="docright">(* 2 bytes  *)</span><br/>
+| <span class="id"><a name="Word">Word</a></span>        <span class="docright">(* 4 bytes  *)</span> <br/>
+<div class="doc">64 bits </div>
+ <br/>
+.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="instruction">instruction</a></span> : <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pload">Pload</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span> -&gt; <span class="id">instruction</span>        <span class="docright">(* dereference load  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pstore">Pstore</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span> -&gt; <span class="id">instruction</span>   <span class="docright">(* dereference store  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Palu32">Palu32</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp">aluOp</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span> -&gt; <span class="id">instruction</span>           <span class="docright">(* arithmetics  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pjmp">Pjmp</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span> -&gt; <span class="id">instruction</span>                                 <span class="docright">(* unconditional jump  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pjmpcmp">Pjmpcmp</a></span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#cmpOp">cmpOp</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span> -&gt; <span class="id">instruction</span> <span class="docright">(* conditional jump with comparison  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pcall">Pcall</a></span> : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#ident">ident</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#signature">signature</a></span> -&gt; <span class="id">instruction</span>                   <span class="docright">(* function call  *)</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Pret">Pret</a></span> : <span class="id">instruction</span>.                                         <span class="docright">(* function return  *)</span><br/>
+<br/>
+<br/>
+<span class="id">Declare</span> <span class="kwd">Scope</span> <span class="id">bpf_asm</span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="code">code</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int64">int64</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="bpf_code">bpf_code</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#instruction">instruction</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="bin_code">bin_code</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span>.<br/>
+<span class="kwd">Record</span> <span class="id"><a name="function">function</a></span> : <span class="kwd">Type</span> := <span class="id"><a name="mkfunction">mkfunction</a></span> {<span class="id"><a name="fn_sig">fn_sig</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#signature">signature</a></span>; <span class="id"><a name="fn_code">fn_code</a></span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#code">code</a></span>}.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="fundef">fundef</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#fundef">AST.fundef</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#function">function</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 5000.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="regset">regset</a></span> := <span class="id"><a href="bpf.rbpf32.TSSyntax.html#t">BPregmap.t</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="genv">genv</a></span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Globalenvs.html#Genv.t">Genv.t</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#fundef">fundef</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#unit">unit</a></span>.<br/>
+<br/>
+<span class="kwd">Notation</span> "<span class="id">a</span> # <span class="id">b</span>" := (<span class="id">a</span> <span class="id">b</span>) (<span class="tactic">at</span> <span class="id">level</span> 1, <span class="id">only</span> <span class="id">parsing</span>) : <span class="id">bpf_asm</span>.<br/>
+<span class="kwd">Notation</span> "<span class="id">a</span> # <span class="id">b</span> &lt;- <span class="id">c</span>" := (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#set">BPregmap.set</a></span> <span class="id">b</span> <span class="id">c</span> <span class="id">a</span>) (<span class="tactic">at</span> <span class="id">level</span> 1, <span class="id">b</span> <span class="tactic">at</span> <span class="id">next</span> <span class="id">level</span>) : <span class="id">bpf_asm</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">bpf_asm</span>.<br/>
+<br/>
+<div class="doc">The semantics is purely small-step and defined as a function
+  from the current state (a register set + a memory state)
+  to either <span class="bracket"><span class="kwd">Next</span> <span class="id">rs</span>' <span class="id">m</span>'</span> where <span class="bracket"><span class="id">rs</span>'</span> and <span class="bracket"><span class="id">m</span>'</span> are the updated register
+  set and memory state after execution of the instruction at <span class="bracket"><span class="id">rs</span>#<span class="id">PC</span></span>,
+  or <span class="bracket"><span class="id">Stuck</span></span> if the processor is stuck. </div>
+<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="outcome">outcome</a></span> : <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="kwd">Next</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span> -&gt; <span class="id">outcome</span><br/>
+&nbsp;&nbsp;| <span class="id"><a name="Stuck">Stuck</a></span>: <span class="id">outcome</span>.<br/>
+<br/>
+<br/>
+<div class="doc">Manipulations over the <span class="bracket"><span class="id">PC</span></span> register: continuing with the next
+  instruction (<span class="bracket"><span class="id">nextinstr</span></span>) or branching to a label (<span class="bracket"><span class="id">goto_label</span></span>). </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nextinstr">nextinstr</a></span> (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="id">rs</span>#<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> &lt;- (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.add">Val.add</a></span> <span class="id">rs</span>#<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vone">Vone</a></span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="goto_label">goto_label</a></span> (<span class="id">c</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#code">code</a></span>) (<span class="id">ofs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>):=<br/>
+&nbsp;&nbsp;<span class="kwd">Next</span> (<span class="id">rs</span>#<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> &lt;- (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.add">Val.add</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.add">Val.add</a></span> <span class="id">rs</span>#<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">ofs</span>)) <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vone">Vone</a></span>)) <span class="id">m</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="eval_reg_imm">eval_reg_imm</a></span> (<span class="id">rs</span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">ri</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span>) : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">ri</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inl">inl</a></span> <span class="id">r</span> =&gt; <span class="id">rs</span>#<span class="id">r</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#inr">inr</a></span> <span class="id">i</span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">i</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">Evaluation of <span class="bracket"><span class="id">Palu</span></span> operands </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="eval_alu32">eval_alu32</a></span> (<span class="id">b</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp">aluOp</a></span>) (<span class="id">v1</span> <span class="id">v2</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">b</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ADD">ADD</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.add">Val.add</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#SUB">SUB</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.sub">Val.sub</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MUL">MUL</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.mul">Val.mul</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#DIV">DIV</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.divu">Val.divu</a></span> <span class="id">v1</span> <span class="id">v2</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#OR">OR</a></span>  =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.or">Val.or</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#AND">AND</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.and">Val.and</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LSH">LSH</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.shl">Val.shl</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#RSH">RSH</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.shru">Val.shru</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#NEG">NEG</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.neg">Val.neg</a></span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOD">MOD</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.modu">Val.modu</a></span> <span class="id">v1</span> <span class="id">v2</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#XOR">XOR</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.xor">Val.xor</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MOV">MOV</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">v2</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#ARSH">ARSH</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.shr">Val.shr</a></span> <span class="id">v1</span> <span class="id">v2</span>)<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<div class="doc">Evaluation of <span class="bracket"><span class="id">Pcmp</span></span> and <span class="bracket"><span class="id">Pjmpcmp</span></span> operands </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="eval_cmp">eval_cmp</a></span> (<span class="id">op</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#cmpOp">cmpOp</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) (<span class="id">r</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>) (<span class="id">ri</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span>) : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">op</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#EQ">EQ</a></span>          =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ceq">Ceq</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#GT">GT</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Signed">Signed</a></span>   =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmp_bool">Val.cmp_bool</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cgt">Cgt</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#GT">GT</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Unsigned">Unsigned</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cgt">Cgt</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#GE">GE</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Signed">Signed</a></span>   =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmp_bool">Val.cmp_bool</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cge">Cge</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#GE">GE</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Unsigned">Unsigned</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cge">Cge</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LT">LT</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Signed">Signed</a></span>   =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmp_bool">Val.cmp_bool</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LT">LT</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Unsigned">Unsigned</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LE">LE</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Signed">Signed</a></span>   =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmp_bool">Val.cmp_bool</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cle">Cle</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#LE">LE</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html#Unsigned">Unsigned</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cle">Cle</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#SET">SET</a></span>         =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cne">Cne</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.and">Val.and</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)) (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.zero">Int.zero</a></span>)<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#NE">NE</a></span>          =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.cmpu_bool">Val.cmpu_bool</a></span>  (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_pointer">Mem.valid_pointer</a></span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Cne">Cne</a></span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>)<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<br/>
+<div class="doc">Auxiliaries for memory accesses </div>
+<span class="kwd">Definition</span> <span class="id"><a name="sizeOp2chunk">sizeOp2chunk</a></span> (<span class="id">k</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span>) : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#memory_chunk">memory_chunk</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">k</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Byte">Byte</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#Mint8unsigned">Mint8unsigned</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#HalfWord">HalfWord</a></span> =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#Mint16unsigned">Mint16unsigned</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Word">Word</a></span>     =&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#Mint32">Mint32</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="exec_load">exec_load</a></span> (<span class="id">k</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span>) (<span class="id">r</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>) (<span class="id">addr</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>:<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp2chunk">sizeOp2chunk</a></span> <span class="id">k</span>) <span class="id">m</span> <span class="id">addr</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">v</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">v</span> <span class="kwd">with</span> <span class="docright">(* Vint should be checked by an invaraint or something like verifier?  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">vi</span> =&gt; <span class="kwd">Next</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> (<span class="id">rs</span>#<span class="id">r</span> &lt;- (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">vi</span>))) <span class="id">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="exec_store">exec_store</a></span> (<span class="id">k</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span>) (<span class="id">ri</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span>) (<span class="id">addr</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>:<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp2chunk">sizeOp2chunk</a></span> <span class="id">k</span>) <span class="id">m</span> <span class="id">addr</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m</span>' =&gt; <span class="kwd">Next</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> <span class="id">rs</span>) <span class="id">m</span>'<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="exec_alu32">exec_alu32</a></span> (<span class="id">o</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp">aluOp</a></span>)  (<span class="id">r</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>) (<span class="id">ri</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>+<span class="id"><a href="bpf.rbpf32.TSSyntax.html#imm">imm</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_alu32">eval_alu32</a></span> <span class="id">o</span> (<span class="id">rs</span>#<span class="id">r</span>) (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_reg_imm">eval_reg_imm</a></span> <span class="id">rs</span> <span class="id">ri</span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">v</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">v</span> <span class="kwd">with</span> <span class="docright">(* Vint should be checked by an invaraint or something like verifier?  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">vi</span> =&gt; <span class="kwd">Next</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> (<span class="id">rs</span>#<span class="id">r</span> &lt;- (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">vi</span>))) <span class="id">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="exec_alu32_list">exec_alu32_list</a></span> (<span class="id">l</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bpf_code">bpf_code</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">l</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [] =&gt; <span class="kwd">Next</span> <span class="id">rs</span> <span class="id">m</span><br/>
+&nbsp;&nbsp;| <span class="id">hd</span> :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">hd</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Palu32">Palu32</a></span> <span class="id">op</span> <span class="id">dst</span> <span class="id">src</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_alu32">exec_alu32</a></span> <span class="id">op</span> <span class="id">dst</span> <span class="id">src</span> <span class="id">rs</span> <span class="id">m</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="kwd">Next</span> <span class="id">rs</span>' <span class="id">m</span>' =&gt; <span class="id">exec_alu32_list</span> <span class="id">tl</span> <span class="id">rs</span>' <span class="id">m</span>'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="exec_cmp">exec_cmp</a></span> (<span class="id">r</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg">breg</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) (<span class="id">res</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">Next</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> (<span class="id">rs</span>#<span class="id">r</span> &lt;- (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.of_optbool">Val.of_optbool</a></span> <span class="id">res</span>))) <span class="id">m</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="exec_branch">exec_branch</a></span> (<span class="id">c</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#code">code</a></span>) (<span class="id">l</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#off">off</a></span>) (<span class="id">rs</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) (<span class="id">res</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span>) : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#outcome">outcome</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">res</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>  =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#goto_label">goto_label</a></span> <span class="id">c</span> <span class="id">l</span> <span class="id">rs</span> <span class="id">m</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#false">false</a></span> =&gt; <span class="kwd">Next</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> <span class="id">rs</span>) <span class="id">m</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Stuck">Stuck</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="z_of_sizeOp">z_of_sizeOp</a></span> (<span class="id">k</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Numbers.BinNums.html#Z">Z</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">k</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Byte">Byte</a></span> =&gt; 1<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#HalfWord">HalfWord</a></span> =&gt; 2<br/>
+&nbsp;&nbsp;| <span class="id"><a href="bpf.rbpf32.TSSyntax.html#Word">Word</a></span>     =&gt; 4<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="max_ofs">max_ofs</a></span> (<span class="id">ofs</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span>) (<span class="id">k</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#sizeOp">sizeOp</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#bool">bool</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#negb">negb</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.ltu">Int.ltu</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> - (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#z_of_sizeOp">z_of_sizeOp</a></span> <span class="id">k</span>))%<span class="id">Z</span>) <span class="id">ofs</span>).<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="state">state</a></span>: <span class="kwd">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id"><a name="State">State</a></span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span> -&gt; <span class="id">state</span>.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

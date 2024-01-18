@@ -1,0 +1,12 @@
+
+square.o:	file format ELF64-BPF
+
+
+Disassembly of section .text:
+
+0000000000000000 square:
+; {
+       0:	bc 10 00 00 00 00 00 00	w0 = w1
+;   return x * x;
+       1:	2c 00 00 00 00 00 00 00	w0 *= w0
+       2:	95 00 00 00 00 00 00 00	exit

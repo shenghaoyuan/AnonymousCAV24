@@ -1,0 +1,783 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module TSSemanticsBequiv</title>
+<meta name="description" content="Documentation of Coq module TSSemanticsBequiv" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module TSSemanticsBequiv</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert.lib</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Maps.html">Maps</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.common</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html">AST</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html">Values</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html">Events</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Globalenvs.html">Globalenvs</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html">Memory</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memtype.html">Memtype</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.cfrontend</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html">Ctypes</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.backend</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.backend.Locations.html">Locations</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.arm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html">ABinSem</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html">AsmSyntax</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.BinDecode.html">BinDecode</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.micromega.Lia.html">Lia</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">bpf.comm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="bpf.comm.Flag.html">Flag</a></span> <span class="id"><a href="bpf.comm.Regs.html">Regs</a></span> <span class="id"><a href="bpf.comm.MemRegion.html">MemRegion</a></span> <span class="id"><a href="bpf.comm.ListAsArray.html">ListAsArray</a></span> <span class="id"><a href="bpf.comm.LemmaInt.html">LemmaInt</a></span> <span class="id"><a href="bpf.comm.JITCall.html">JITCall</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">bpf.rbpf32</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html">TSSyntax</a></span> <span class="id"><a href="bpf.rbpf32.TSDecode.html">TSDecode</a></span> <span class="id"><a href="bpf.rbpf32.Analyzer.html">Analyzer</a></span> <span class="id"><a href="bpf.rbpf32.JITConfig.html">JITConfig</a></span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html">BSemanticsSimpl</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">bpf.jit</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="bpf.jit.TSSemanticsB.html">TSSemanticsB</a></span> <span class="id"><a href="bpf.jit.WholeCompiler.html">WholeCompiler</a></span> <span class="id"><a href="bpf.jit.TSSemanticsBproofdef.html">TSSemanticsBproofdef</a></span> <span class="id"><a href="bpf.jit.TSSemanticsBproof.html">TSSemanticsBproof</a></span>.<br/>
+<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">asm</span>.<br/>
+<span class="kwd">Import</span> <span class="id">ListNotations</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="memory_region_mapping">memory_region_mapping</a></span> (<span class="id">mrs</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="bpf.comm.MemRegion.html#memory_region">memory_region</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>) (<span class="id">p</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memtype.html#permission">permission</a></span>) (<span class="id">ck</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#memory_chunk">memory_chunk</a></span>) (<span class="id">addr</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span>) (<span class="id">b</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#block">block</a></span>) (<span class="id">ofs</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#ptrofs">ptrofs</a></span>): <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#check_mem">check_mem</a></span> <span class="id">p</span> <span class="id">ck</span> <span class="id">addr</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">mrs</span>) <span class="id">mrs</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">b</span> <span class="id">ofs</span>).<br/>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="kv_flatten_aux">kv_flatten_aux</a></span> (<span class="id">kv</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>)) (<span class="id">l</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">kv</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [] =&gt; <span class="id">l</span><br/>
+&nbsp;&nbsp;| (<span class="id">k</span>, <span class="id">v</span>) :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="bpf.comm.ListAsArray.html#ListNat.assign">ListNat.assign</a></span> <span class="id">l</span> <span class="id">k</span> <span class="id">v</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; []<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">l</span>' =&gt; <span class="id">kv_flatten_aux</span> <span class="id">tl</span> <span class="id">l</span>'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="kv_flatten">kv_flatten</a></span> (<span class="id">kv</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> * <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>)) (<span class="id">len</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>): <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#kv_flatten_aux">kv_flatten_aux</a></span> <span class="id">kv</span> (<span class="id"><a href="bpf.comm.ListAsArray.html#ListNat.create_int_list">ListNat.create_int_list</a></span> <span class="id">len</span>).<br/>
+<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="kv_flatten_property">kv_flatten_property</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">bl</span> <span class="id">kv</span> <span class="id">l</span> <span class="id">n</span> <span class="id">v</span> <span class="id">ofs</span> <span class="id">l0</span><br/>
+&nbsp;&nbsp;(<span class="id">Hnth</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">bl</span> <span class="id">n</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">v</span>, (<span class="id">ofs</span>, <span class="id">l0</span>)))<br/>
+&nbsp;&nbsp;(<span class="id">Hanalyzer</span> : <span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hcombiner</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#combiner">combiner</a></span> <span class="id">kl</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hconcat</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#concat_bin">concat_bin</a></span> <span class="id">bl</span> = (<span class="id">kv</span>, <span class="id">l</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.comm.ListAsArray.html#ListNat.index">ListNat.index</a></span> (<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#kv_flatten">kv_flatten</a></span> <span class="id">kv</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.to_nat">Z.to_nat</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>)))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">ofs</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof1')">Proof.</div>
+<div class="proofscript" id="proof1">
+&nbsp;&nbsp;<span class="comment">(**r&nbsp;this&nbsp;is&nbsp;a&nbsp;property&nbsp;of&nbsp;kv_flatten,&nbsp;do&nbsp;it&nbsp;later&nbsp;*)</span><br/>
+Admitted.</div>
+<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="init_state_pc">init_state_pc</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">v0</span> <span class="id">v1</span> <span class="id">m2</span>  <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb1</span> <span class="id">am</span><br/>
+&nbsp;&nbsp;(<span class="id">Hinit</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_state">init_state</a></span> <span class="id"><a href="bpf.comm.JITCall.html#compcertbin_signature">compcertbin_signature</a></span> <span class="id"><a href="bpf.comm.JITCall.html#stack_block_size">stack_block_size</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">v0</span>; <span class="id">v1</span>] <span class="id">m2</span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#ANext">ANext</a></span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb1</span> <span class="id">am</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">ars1</span>#<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#PC">PC</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#Cval">Cval</a></span> <span class="id">v0</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2')">Proof.</div>
+<div class="proofscript" id="proof2">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_state">init_state</a></span>, <span class="id"><a href="bpf.comm.JITCall.html#compcertbin_signature">compcertbin_signature</a></span>, <span class="id"><a href="bpf.comm.JITCall.html#stack_block_size">stack_block_size</a></span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#allocframe">allocframe</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="kwd">as</span> (<span class="id">m0</span> &amp; <span class="id">stkb</span>) <span class="id">eqn</span>: <span class="id">Halloc</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_regset">init_regset</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#astack_store">astack_store</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">change</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>) <span class="kwd">with</span> 0%<span class="id">Z</span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_access_dec">Mem.valid_access_dec</a></span> <span class="kwd">as</span> [<span class="id">HL</span> | <span class="id">HR</span>]; [| <span class="tactic">inversion</span> <span class="id">Hinit</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#encode_aval">encode_aval</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#regset0">regset0</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hinit</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span> <span class="id">Heq3</span> <span class="id">Heq4</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">Heq1</span>; <span class="tactic">clear</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#Pregmap.gss">Pregmap.gss</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#Pregmap.gss">Pregmap.gss</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="code_subset_in_blk_alloc_unchanged">code_subset_in_blk_alloc_unchanged</a></span>:<br/>
+<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> <span class="id">x</span> <span class="id">y</span> <span class="id">m1</span> <span class="id">b</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">m</span> <span class="id">x</span> <span class="id">y</span> = (<span class="id">m1</span>, <span class="id">b</span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m</span> <span class="id">jit_blk</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> /\ <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m1</span> <span class="id">jit_blk</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof3')">Proof.</div>
+<div class="proofscript" id="proof3">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;{ <span class="tactic">split</span>; [<span class="tactic">reflexivity</span>| ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block_alloc">Mem.valid_block_alloc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="kwd">as</span> [<span class="id">ins</span> | ] <span class="id">eqn</span>: <span class="id">Hload</span>; [| <span class="tactic">inversion</span> <span class="id">H</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load_alloc_unchanged">Mem.load_alloc_unchanged</a></span> <span class="kwd">with</span> (<span class="id">b</span>' := <span class="id">jit_blk</span>) <span class="kwd">in</span> <span class="id">H0</span> <span class="kwd">as</span> <span class="id">Heq</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hload</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ins</span>; <span class="tactic">inversion</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.eq">Int.eq</a></span>; [| <span class="tactic">inversion</span> <span class="id">H</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">IHl</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="code_subset_in_blk_copy_to_unchanged">code_subset_in_blk_copy_to_unchanged</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> <span class="id">b</span> <span class="id">m1</span> <span class="id">rs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m</span> <span class="id">jit_blk</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.JITConfig.html#copy_to">copy_to</a></span> <span class="id">rs</span> <span class="id">b</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">m1</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> /\ <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m1</span> <span class="id">jit_blk</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof4')">Proof.</div>
+<div class="proofscript" id="proof4">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;{ <span class="tactic">split</span>; [<span class="tactic">reflexivity</span> |].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.JITConfig.html#copy_to">copy_to</a></span> <span class="kwd">in</span> <span class="id">H2</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 11 (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.store">Mem.store</a></span> <span class="id">eqn</span>: <span class="id">Hstore</span>; [<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.store_valid_block_1">Mem.store_valid_block_1</a></span> <span class="kwd">in</span> <span class="id">Hstore</span>; <span class="tactic">eauto</span>; <span class="tactic">clear</span> <span class="id">H1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">Hstore</span> <span class="id">into</span> <span class="id">H1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="tactic">inversion</span> <span class="id">H2</span>]).<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.store_valid_block_1">Mem.store_valid_block_1</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="kwd">as</span> [<span class="id">ins</span> |] <span class="id">eqn</span>: <span class="id">Hload</span>; [| <span class="tactic">inversion</span> <span class="id">H0</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#Mint32">Mint32</a></span> <span class="id">m1</span> <span class="id">jit_blk</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id">ofs</span> + (<span class="id">ofs</span> + (<span class="id">ofs</span> + (<span class="id">ofs</span> + 0))))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">ins</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">H</span> <span class="id">Hload</span> <span class="id">H1</span> <span class="id">H2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.JITConfig.html#copy_to">copy_to</a></span> <span class="kwd">in</span> <span class="id">H2</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 11 (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.store">Mem.store</a></span> <span class="id">eqn</span>: <span class="id">Hstore</span>; [<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load_store_other">Mem.load_store_other</a></span> <span class="kwd">in</span> <span class="id">Hstore</span>; <span class="tactic">eauto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">Hstore</span> <span class="kwd">in</span> <span class="id">Hload</span>; <span class="tactic">clear</span> <span class="id">Hstore</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="tactic">inversion</span> <span class="id">H2</span>]).<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load_store_other">Mem.load_store_other</a></span> <span class="kwd">in</span> <span class="id">H2</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H2</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ins</span>; <span class="tactic">inversion</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.eq">Int.eq</a></span>; [| <span class="tactic">inversion</span> <span class="id">H0</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">IHl</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="code_subset_in_blk_init_state_unchanged">code_subset_in_blk_init_state_unchanged</a></span>:<br/>
+<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> <span class="id">v0</span> <span class="id">v1</span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb1</span> <span class="id">m1</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m</span> <span class="id">jit_blk</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_state">init_state</a></span> <span class="id"><a href="bpf.comm.JITCall.html#compcertbin_signature">compcertbin_signature</a></span> <span class="id"><a href="bpf.comm.JITCall.html#stack_block_size">stack_block_size</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">v0</span>; <span class="id">v1</span>] <span class="id">m</span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#ANext">ANext</a></span> <span class="id">ars1</span> <span class="id">astk1</span> <span class="id">astkb1</span> <span class="id">m1</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof5')">Proof.</div>
+<div class="proofscript" id="proof5">
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_state">init_state</a></span>, <span class="id"><a href="bpf.comm.JITCall.html#compcertbin_signature">compcertbin_signature</a></span>, <span class="id"><a href="bpf.comm.JITCall.html#stack_block_size">stack_block_size</a></span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#allocframe">allocframe</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="kwd">as</span> (<span class="id">m0</span> &amp; <span class="id">stkb</span>) <span class="id">eqn</span>: <span class="id">Halloc</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_regset">init_regset</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#astack_store">astack_store</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">change</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.unsigned">Ptrofs.unsigned</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>) <span class="kwd">with</span> 0%<span class="id">Z</span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_access_dec">Mem.valid_access_dec</a></span> <span class="kwd">as</span> [<span class="id">HL</span> | <span class="id">HR</span>]; [| <span class="tactic">inversion</span> <span class="id">Hinit</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#encode_aval">encode_aval</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#regset0">regset0</a></span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hinit</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hinit</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span> <span class="id">Heq3</span> <span class="id">Heq4</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">Heq4</span>; <span class="tactic">clear</span> - <span class="id">H</span> <span class="id">H0</span> <span class="id">Halloc</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#code_subset_in_blk_alloc_unchanged">code_subset_in_blk_alloc_unchanged</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="jit_len_max">jit_len_max</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">bl</span> <span class="id">kv</span> <span class="id">l</span> <span class="id">l0</span> <span class="id">v</span> <span class="id">ofs</span> <span class="id">n</span><br/>
+&nbsp;&nbsp;(<span class="id">Hjit_len_max</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l</span> &lt; <span class="id"><a href="bpf.comm.JITCall.html#JITTED_LIST_MAX_LENGTH">JITTED_LIST_MAX_LENGTH</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hnth</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">bl</span> <span class="id">n</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">v</span>, (<span class="id">ofs</span>, <span class="id">l0</span>)))<br/>
+&nbsp;&nbsp;(<span class="id">Hanalyzer</span> : <span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hcombiner</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#combiner">combiner</a></span> <span class="id">kl</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hconcat</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#concat_bin">concat_bin</a></span> <span class="id">bl</span> = (<span class="id">kv</span>, <span class="id">l</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l0</span> &lt; <span class="id"><a href="bpf.comm.JITCall.html#JITTED_LIST_MAX_LENGTH">JITTED_LIST_MAX_LENGTH</a></span> /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id">ofs</span> + <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">l0</span>) * 4) &lt; <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span>)%<span class="id">Z</span>.<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof6')">Proof.</div>
+<div class="proofscript" id="proof6">
+<br/>
+Admitted.</div>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="exec_bin_list_inv">exec_bin_list_inv</a></span> (<span class="id">l</span>: <span class="id"><a href="bpf.rbpf32.TSSyntax.html#bin_code">bin_code</a></span>) (<span class="id">ofs</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>) (<span class="id">jit_blk</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#block">block</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">ars</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#aregset">aregset</a></span>) (<span class="id">astk</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#astack">astack</a></span>) (<span class="id">astkb</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#block">block</a></span>) (<span class="id">m</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span>): <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">ars</span> <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">l</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [] =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#True">True</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">hd</span> :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">ars</span>#<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#PC">PC</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#Cval">Cval</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">jit_blk</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.of_int">Ptrofs.of_int</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (4* <span class="id">ofs</span>)))))) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.BinDecode.html#decode_thumb">decode_thumb</a></span> <span class="id">hd</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">arm_ins</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#aexec_instr">aexec_instr</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> <span class="id">arm_ins</span> <span class="id">ars</span> <span class="id">astk</span> <span class="id">astkb</span> <span class="id">m</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#AStuck">AStuck</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Logic.html#False">False</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#ANext">ANext</a></span> <span class="id">ars</span>' <span class="id">astk</span>' <span class="id">astkb</span>' <span class="id">m</span>' =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">tl</span> (<span class="id">ofs</span>+1) <span class="id">jit_blk</span> <span class="id">m</span>' = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">astkb</span> = <span class="id">astkb</span>') /\<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">exec_bin_list_inv</span> <span class="id">tl</span> (<span class="id">ofs</span>+1) <span class="id">jit_blk</span> <span class="id">ars</span>' <span class="id">astk</span>' <span class="id">astkb</span>' <span class="id">m</span>')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Axiom</span> <span class="id"><a name="jit_inv1">jit_inv1</a></span>: <span class="kwd">forall</span> <span class="id">l</span> <span class="id">n</span> <span class="id">v</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">kv</span> <span class="id">bl</span> <span class="id">ls</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m2</span><br/>
+&nbsp;&nbsp;(<span class="id">Hnth</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">bl</span> <span class="id">n</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">v</span>, (<span class="id">ofs</span>, <span class="id">l</span>)))<br/>
+&nbsp;&nbsp;(<span class="id">Hanalyzer</span> : <span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hcombiner</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#combiner">combiner</a></span> <span class="id">kl</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hconcat</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#concat_bin">concat_bin</a></span> <span class="id">bl</span> = (<span class="id">kv</span>, <span class="id">ls</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#exec_bin_list">exec_bin_list</a></span> <span class="id">l</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#ANext">ANext</a></span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m2</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#exec_bin_list_inv">exec_bin_list_inv</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="bin_interp_less_fuel">bin_interp_less_fuel</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">n</span> <span class="id">rt</span> <span class="id">k</span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m1</span> <span class="id">res</span> <span class="id">m2</span>,<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#bin_interp">bin_interp</a></span> <span class="id">rt</span> <span class="id">n</span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">res</span>, <span class="id">m2</span>) -&gt;<br/>
+&nbsp;&nbsp;<span class="id">n</span> &lt;= <span class="id">k</span> -&gt;<br/>
+&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#bin_interp">bin_interp</a></span> <span class="id">rt</span> <span class="id">k</span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">res</span>, <span class="id">m2</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof7')">Proof.</div>
+<div class="proofscript" id="proof7">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">n</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;{ <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">k</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span>; [| <span class="tactic">inversion</span> <span class="id">H</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">H</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">eqn</span>: <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;is&nbsp;final&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">k</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">inversion</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="comment">(**r&nbsp;is&nbsp;NOT&nbsp;final&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#find_instr">ABinSem.find_instr</a></span> <span class="kwd">as</span> [ (<span class="id">i</span> &amp; <span class="id">sz</span>) | ] <span class="id">eqn</span>: <span class="id">Hfind</span>;<br/>
+&nbsp;&nbsp;[| <span class="tactic">inversion</span> <span class="id">H</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#aexec_instr">aexec_instr</a></span> <span class="kwd">as</span> [ <span class="id">rs</span>' <span class="id">stk</span>' <span class="id">stkb</span> <span class="id">m</span>' | ] <span class="id">eqn</span>: <span class="id">Hexe</span>;<br/>
+&nbsp;&nbsp;[| <span class="tactic">inversion</span> <span class="id">H</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">k</span>; [<span class="tactic">inversion</span> <span class="id">H0</span> |].<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id">n</span> &lt;= <span class="id">k</span>) <span class="tactic">by</span> <span class="id">lia</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">IHn</span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="exec_bin_list_bin_interp">exec_bin_list_bin_interp</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">k</span> <span class="id">stkb2</span> <span class="id">m2</span><br/>
+&nbsp;&nbsp;(<span class="id">Hsubst</span> : <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#exec_bin_list_inv">exec_bin_list_inv</a></span> <span class="id">l</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hofs</span>: (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> ((<span class="id">ofs</span> + <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l</span>) * 4) &lt; <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span>)%<span class="id">Z</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hlen</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l</span> &lt; <span class="id">k</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hexec</span>: <span class="id"><a href="bpf.jit.WholeCompiler.html#exec_bin_list">exec_bin_list</a></span> <span class="id">l</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#ANext">ANext</a></span> <span class="id">ars2</span> <span class="id">stk2</span> <span class="id">stkb2</span> <span class="id">m2</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hfinal</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">ars2</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hars_r0</span> : <span class="id"><a href="bpf.comm.JITCall.html#get_result_bool">get_result_bool</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#Tint">AST.Tint</a></span> (<span class="id">ars2</span>#<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#IR0">IR0</a></span>) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>) ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">exists</span> <span class="id">res</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#bin_interp">bin_interp</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#sig_res">sig_res</a></span> <span class="id"><a href="bpf.comm.JITCall.html#compcertbin_signature">compcertbin_signature</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">k</span> <span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">m1</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">res</span>, <span class="id">m2</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof8')">Proof.</div>
+<div class="proofscript" id="proof8">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hexec</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">eqn</span>: <span class="id">His_final</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hexec</span> <span class="kwd">as</span> <span class="id">Hrs_eq</span> <span class="id">Hstk_eq</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.JITCall.html#get_result_bool">get_result_bool</a></span> <span class="kwd">in</span> <span class="id">Hars_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">ars2</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#IR0">IR0</a></span>) <span class="kwd">as</span> [ <span class="id">v_r0</span> | ] <span class="id">eqn</span>: <span class="id">Heq</span>; [| <span class="tactic">inversion</span> <span class="id">Hars_r0</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">exists</span> <span class="id">v_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#bin_interp_less_fuel">bin_interp_less_fuel</a></span> <span class="kwd">with</span> (<span class="id">n</span> := 0); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2:{ <span class="id">lia</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#get_result">get_result</a></span>; <span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hars_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hars_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id">exfalso</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">His_final</span> <span class="kwd">in</span> <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hfinal</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">k</span>.<br/>
+&nbsp;&nbsp;{ <span class="docright">(* k = 0  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hlen</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hexec</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">eqn</span>: <span class="id">His_final</span>.<br/>
+&nbsp;&nbsp;{ <span class="tactic">inversion</span> <span class="id">Hexec</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.JITCall.html#get_result_bool">get_result_bool</a></span> <span class="kwd">in</span> <span class="id">Hars_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#get_result">get_result</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> (<span class="id">ars2</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#IR0">IR0</a></span>) <span class="kwd">as</span> [<span class="id">v_r0</span> | ] <span class="id">eqn</span>: <span class="id">Hars_r0_eq</span>; [| <span class="tactic">inversion</span> <span class="id">Hars_r0</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hars_r0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eexists</span>; <span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#find_instr">ABinSem.find_instr</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hsubst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">His_final</span> <span class="kwd">in</span> <span class="id">Hsubst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsubst</span> <span class="kwd">as</span> (<span class="id">Hmem1</span> &amp; <span class="id">Hpc</span> &amp; <span class="id">Hsubst</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.load">Mem.load</a></span> <span class="kwd">as</span> [<span class="id">ins</span> | ] <span class="id">eqn</span>: <span class="id">Hload</span>; [| <span class="tactic">inversion</span> <span class="id">Hmem1</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ins</span>; <span class="tactic">inversion</span> <span class="id">Hmem1</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.eq">Int.eq</a></span> <span class="id">eqn</span>: <span class="id">Heq</span>; [| <span class="tactic">inversion</span> <span class="id">Hmem1</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.same_if_eq">Int.same_if_eq</a></span> <span class="kwd">in</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">i</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hpc</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.BinDecode.html#find_instr">BinDecode.find_instr</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.of_int">Ptrofs.of_int</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>.<br/>
+&nbsp;&nbsp;2:{ <span class="id">lia</span>. }<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.unsigned_repr">Ptrofs.unsigned_repr</a></span>.<br/>
+&nbsp;&nbsp;2:{ <span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.max_unsigned">Ptrofs.max_unsigned</a></span> <span class="kwd">with</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span>; <span class="id">lia</span>. }<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hload</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.BinDecode.html#decode_thumb">decode_thumb</a></span> <span class="kwd">as</span> [<span class="id">arm_ins</span> | ] <span class="id">eqn</span>: <span class="id">Hdecode</span>; [| <span class="tactic">inversion</span> <span class="id">Hexec</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#aexec_instr">aexec_instr</a></span> <span class="kwd">as</span> [<span class="id">ars</span>' <span class="id">astk</span>' <span class="id">astkb</span>' <span class="id">m</span>' | ] <span class="id">eqn</span>: <span class="id">Hinstr</span>; [| <span class="tactic">inversion</span> <span class="id">Hexec</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsubst</span> <span class="kwd">as</span> (<span class="id">Hsubst1</span> &amp; <span class="id">Hstkb_eq</span> &amp; <span class="id">Hsubst</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">IHl</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id">IHl</span> <span class="kwd">with</span> (<span class="id">ofs</span> := <span class="id">ofs</span>+1) (<span class="id">jit_blk</span> := <span class="id">jit_blk</span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">clear</span> - <span class="id">Hofs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hofs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">clear</span> - <span class="id">Hlen</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hlen</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="Forward4">Forward4</a></span>.<br/>
+<br/>
+<span class="kwd">Hypothesis</span> <span class="id"><a name="Forward4._bpf_get_call">_bpf_get_call</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#ident">ident</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#genv">genv</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#fundef">fundef</a></span>.<br/>
+<br/>
+<span class="kwd">Axiom</span> <span class="id"><a name="_bpf_get_call_equiv">_bpf_get_call_equiv</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">s</span> <span class="id">ge</span> <span class="id">ef</span> (<span class="id">rs</span> <span class="id">rs</span>': <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) <span class="id">m</span> <span class="id">t</span> <span class="id">res</span> <span class="id">args</span> <span class="id">m</span>' <span class="id">sg</span><br/>
+&nbsp;&nbsp;(<span class="id">Hcall</span> : <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#Forward4._bpf_get_call">_bpf_get_call</a></span> <span class="id">s</span> <span class="id">ge</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#External">AST.External</a></span> <span class="id">ef</span>))<br/>
+&nbsp;&nbsp;(<span class="id">Hargs</span> : <span class="id">args</span> = [<span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R1">R1</a></span>; <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R2">R2</a></span>; <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R3">R3</a></span>; <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R4">R4</a></span>; <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R5">R5</a></span>])<br/>
+&nbsp;&nbsp;(<span class="id">Hext</span> : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html#external_call">external_call</a></span> <span class="id">ef</span> <span class="id">ge</span> <span class="id">args</span> <span class="id">m</span> <span class="id">t</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">res</span>) <span class="id">m</span>')<br/>
+&nbsp;&nbsp;(<span class="id">Hrs1</span> : <span class="id">rs</span>' = <span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPregmap.set">BPregmap.set</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#R0">R0</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">res</span>) <span class="id">rs</span>)),<br/>
+&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#_bpf_get_call">BSemanticsSimpl._bpf_get_call</a></span> <span class="id">s</span> <span class="id">sg</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> <span class="id">res</span>, <span class="id">m</span>').<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="jit_call_simpl_exec_bin_code_equiv">jit_call_simpl_exec_bin_code_equiv</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">bl</span> <span class="id">n</span> <span class="id">v</span> <span class="id">l0</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> (<span class="id">rs</span> <span class="id">rs</span>': <span class="id"><a href="bpf.rbpf32.TSSyntax.html#regset">regset</a></span>) <span class="id">m</span>' <span class="id">c</span> <span class="id">kl</span> <span class="id">kv</span> <span class="id">l</span><br/>
+&nbsp;&nbsp;(<span class="id">Hvalid_jit</span> : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m</span> <span class="id">jit_blk</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hnth</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">bl</span> <span class="id">n</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">v</span>, (<span class="id">ofs</span>, <span class="id">l0</span>)))<br/>
+&nbsp;&nbsp;(<span class="id">Hofs</span>: (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> ((<span class="id">ofs</span> + <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l0</span>) * 4) &lt; <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span>)%<span class="id">Z</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hsubst</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#code_subset_in_blk">code_subset_in_blk</a></span> <span class="id">l0</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">m</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hexe</span> : <span class="id"><a href="bpf.jit.TSSemanticsB.html#exec_bin_code">exec_bin_code</a></span> <span class="id">l0</span> <span class="id">ofs</span> <span class="id">jit_blk</span> <span class="id">rs</span> <span class="id">m</span> = <span class="kwd">Next</span> <span class="id">rs</span>' <span class="id">m</span>')<br/>
+&nbsp;&nbsp;(<span class="id">Hpc_eq</span> : <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>)) = <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hjit_blk</span> : <span class="id"><a href="bpf.comm.JITCall.html#jit_arm_start_address">jit_arm_start_address</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">jit_blk</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hlen_max</span> : <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span> &lt;= 5000)<br/>
+&nbsp;&nbsp;(<span class="id">Hlen</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l0</span> &lt; <span class="id"><a href="bpf.comm.JITCall.html#JITTED_LIST_MAX_LENGTH">JITTED_LIST_MAX_LENGTH</a></span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hanalyzer</span> : <span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hcombiner</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#combiner">combiner</a></span> <span class="id">kl</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bl</span>)<br/>
+&nbsp;&nbsp;(<span class="id">Hconcat</span> : <span class="id"><a href="bpf.jit.WholeCompiler.html#concat_bin">concat_bin</a></span> <span class="id">bl</span> = (<span class="id">kv</span>, <span class="id">l</span>))<br/>
+&nbsp;&nbsp;(<span class="id">Hreg_inv</span>: <span class="id"><a href="bpf.jit.TSSemanticsBproofdef.html#reg_inv">reg_inv</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs</span> <span class="id">m</span>))<br/>
+&nbsp;&nbsp;(<span class="id">Hle_pc</span> : <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="bpf.rbpf32.BState.html#jit_call_simplb">BState.jit_call_simplb</a></span> (<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#kv_flatten">kv_flatten</a></span> <span class="id">kv</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>)) <span class="id">rs</span> <span class="id">m</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">rs</span>'0, <span class="id">m</span>'0) =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">rs</span>'0, <span class="id">m</span>'0, <span class="id"><a href="bpf.comm.Flag.html#BPF_OK">BPF_OK</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">rs</span>', <span class="id">m</span>', <span class="id"><a href="bpf.comm.Flag.html#BPF_OK">BPF_OK</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof9')">Proof.</div>
+<div class="proofscript" id="proof9">
+<br/>
+&nbsp;&nbsp;<span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BState.html#jit_call_simplb">BState.jit_call_simplb</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hjit_blk</span>; <span class="tactic">clear</span> <span class="id">Hjit_blk</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">Hpc_eq</span>.<br/>
+&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#kv_flatten_property">kv_flatten_property</a></span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.jit.TSSemanticsB.html#exec_bin_code">exec_bin_code</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.JITCall.html#state_block_size">state_block_size</a></span> <span class="kwd">in</span> *.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.alloc">Mem.alloc</a></span> <span class="id">eqn</span>: <span class="id">Halloc</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.JITConfig.html#copy_to">copy_to</a></span> <span class="kwd">as</span> [<span class="id">m1</span> | ] <span class="id">eqn</span>: <span class="id">Hcopy_to</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#bin_exec">bin_exec</a></span>.<br/>
+&nbsp;&nbsp;<span class="tactic">change</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 52%<span class="id">Z</span>)) <span class="kwd">with</span> 52%<span class="id">Z</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.JITCall.html#stack_block_size">stack_block_size</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#init_state">init_state</a></span> <span class="kwd">as</span> [<span class="id">ars1</span> <span class="id">stk1</span> <span class="id">stkb1</span> <span class="id">am</span> | ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">eqn</span>: <span class="id">Hinit_state</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hinit_state</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.add_zero_l">Ptrofs.add_zero_l</a></span> <span class="kwd">in</span> <span class="id">Hinit_state</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hars_pc</span>: <span class="id">ars1</span>#<span class="id"><a href="https://compcert.org/doc/html/compcert.arm.AsmSyntax.html#PC">PC</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#Cval">Cval</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">jit_blk</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.of_int">Ptrofs.of_int</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id">ofs</span> + (<span class="id">ofs</span> + (<span class="id">ofs</span> + (<span class="id">ofs</span> + 0))))))<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Int.mul<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Int.repr<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Z.of_nat&nbsp;ofs))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Int.repr&nbsp;2))&nbsp;*)</span> ))). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#init_state_pc">init_state_pc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;} <span class="comment">(*<br/>
+&nbsp;&nbsp;destruct&nbsp;Hars_pc&nbsp;as&nbsp;(Hars_r0&nbsp;&amp;&nbsp;Hars_pc).&nbsp;*)</span><br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.jit.WholeCompiler.html#exec_bin_list">exec_bin_list</a></span> <span class="kwd">as</span> [<span class="id">ars2</span> <span class="id">astk2</span> <span class="id">astkb2</span> <span class="id">am2</span> | ] <span class="id">eqn</span>: <span class="id">Hexec</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html#is_final_state">is_final_state</a></span> <span class="id">eqn</span>: <span class="id">Hfinal</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#code_subset_in_blk_alloc_unchanged">code_subset_in_blk_alloc_unchanged</a></span> <span class="kwd">in</span> <span class="id">Hsubst</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsubst</span> <span class="kwd">as</span> (<span class="id">Hsubst</span> &amp; <span class="id">Hvalid_m0</span>).<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hblk_neq</span>: <span class="id">b</span> &lt;&gt; <span class="id">jit_blk</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.fresh_block_alloc">Mem.fresh_block_alloc</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">b</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#code_subset_in_blk_copy_to_unchanged">code_subset_in_blk_copy_to_unchanged</a></span> <span class="kwd">in</span> <span class="id">Hsubst</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsubst</span> <span class="kwd">as</span> (<span class="id">Hsubst</span> &amp; <span class="id">Hvalid_m1</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#code_subset_in_blk_init_state_unchanged">code_subset_in_blk_init_state_unchanged</a></span> <span class="kwd">in</span> <span class="id">Hsubst</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.comm.JITCall.html#get_result_bool">get_result_bool</a></span> <span class="id">eqn</span>: <span class="id">Hget_result</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#jit_inv1">jit_inv1</a></span> <span class="kwd">in</span> <span class="id">Hsubst</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#exec_bin_list_bin_interp">exec_bin_list_bin_interp</a></span> <span class="kwd">in</span> <span class="id">Hsubst</span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hsubst</span> <span class="kwd">as</span> (<span class="id">res</span> &amp; <span class="id">Hinterp</span>).<br/>
+&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hinterp</span>.<br/>
+<br/>
+&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.JITConfig.html#copy_from">copy_from</a></span> <span class="kwd">as</span> [<span class="id">rs1</span> | ] <span class="id">eqn</span>: <span class="id">Hcopy_from</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hexe</span> <span class="kwd">as</span> <span class="id">Hrs1_eq</span> <span class="id">Hm_eq</span>; <span class="tactic">subst</span> <span class="id">rs</span>' <span class="id">m</span>'.<br/>
+&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<br/>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="forward_from_ts_to_interpreter_simpl">forward_from_ts_to_interpreter_simpl</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">rs1</span> <span class="id">rs2</span> <span class="id">st1</span> <span class="id">st2</span> <span class="id">m1</span> <span class="id">m2</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">bl</span> <span class="id">kv</span> <span class="id">l</span> <span class="id">ge</span> <span class="id">jit_blk</span> <span class="id">t</span> <span class="id">mrs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.TSSemanticsB.html#bstep">bstep</a></span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#Forward4._bpf_get_call">_bpf_get_call</a></span> (<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#memory_region_mapping">memory_region_mapping</a></span> <span class="id">mrs</span>) <span class="id">c</span> <span class="id">bl</span> <span class="id">jit_blk</span> <span class="id">ge</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">st1</span> <span class="id">t</span> <span class="id">st2</span> -&gt;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">st1</span> = <span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs1</span> <span class="id">m1</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">st2</span> = <span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs2</span> <span class="id">m2</span> -&gt;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.comm.JITCall.html#jit_arm_start_address">jit_arm_start_address</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vptr">Vptr</a></span> <span class="id">jit_blk</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Ptrofs.zero">Ptrofs.zero</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.valid_block">Mem.valid_block</a></span> <span class="id">m1</span> <span class="id">jit_blk</span> -&gt;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span> &lt;= <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#combiner">combiner</a></span> <span class="id">kl</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">bl</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.WholeCompiler.html#concat_bin">concat_bin</a></span> <span class="id">bl</span> = (<span class="id">kv</span>, <span class="id">l</span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.jit.TSSemanticsBproofdef.html#reg_inv">reg_inv</a></span> <span class="id">st1</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">l</span> &lt; <span class="id"><a href="bpf.comm.JITCall.html#JITTED_LIST_MAX_LENGTH">JITTED_LIST_MAX_LENGTH</a></span> -&gt;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#step">step</a></span> <span class="id">c</span> (<span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#kv_flatten">kv_flatten</a></span> <span class="id">kv</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>)) (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>) <span class="id">rs1</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">mrs</span>) <span class="id">mrs</span> <span class="id">m1</span> =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> (<span class="id">rs2</span>, <span class="id">m2</span>, <span class="id"><a href="bpf.comm.Flag.html#BPF_OK">BPF_OK</a></span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof10')">Proof.</div>
+<div class="proofscript" id="proof10">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1; <span class="tactic">intros</span> <span class="id">Hst1</span> <span class="id">Hst2</span> <span class="id">Hjit_blk</span> <span class="id">Hvalid_jit</span> <span class="id">Hlen_max</span> <span class="id">Hanalyzer</span> <span class="id">Hcombiner</span> <span class="id">Hconcat</span> <span class="id">Hreg_inv</span> <span class="id">Hjit_len_max</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hst1</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span> <span class="id">rs1</span> <span class="id">m1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hst2</span> <span class="kwd">as</span> <span class="id">Heq3</span> <span class="id">Heq4</span>; <span class="tactic">subst</span> <span class="id">rs2</span> <span class="id">m2</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#step">step</a></span>, <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#eval_ins">eval_ins</a></span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hnth</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">Hsubst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H3</span> <span class="id">into</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#jit_len_max">jit_len_max</a></span> <span class="kwd">in</span> <span class="id">Hjit_len_max</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hjit_len_max</span> <span class="kwd">as</span> (<span class="id">Hjit_len_max1</span> &amp; <span class="id">Hjit_len_max2</span>).<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#jit_call_simpl_exec_bin_code_equiv">jit_call_simpl_exec_bin_code_equiv</a></span>; <span class="tactic">eauto</span>. <span class="id">lia</span>.<br/>
+&nbsp;&nbsp;- <span class="docright">(* JMP_always  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#goto_label">goto_label</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hexe</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="docright">(* JMP Cond  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#goto_label">goto_label</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_branch">exec_branch</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_cmp">eval_cmp</a></span> <span class="kwd">as</span> [<span class="id">b</span>|] <span class="id">eqn</span>: <span class="id">Hcmp</span>; [| <span class="tactic">inversion</span> <span class="id">Hexe</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">b</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#goto_label">goto_label</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Hexe</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">injection</span> <span class="id">Hexe</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="docright">(* Load  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#memory_region_mapping">memory_region_mapping</a></span> <span class="kwd">in</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#step_load_x_operation">step_load_x_operation</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.rBPFValues.html#sint32_to_vint">rBPFValues.sint32_to_vint</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.rBPFValues.html#cmp_ptr32_null">rBPFValues.cmp_ptr32_null</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#check_mem_prop">check_mem_prop</a></span> <span class="kwd">in</span> <span class="id">Hregion</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hregion</span> <span class="kwd">as</span> [(<span class="id">b0</span> &amp; <span class="id">ofs0</span> &amp;<span class="id">Heq</span> &amp; <span class="id">Hvalid1</span> &amp; <span class="id">Hvalid2</span>)| <span class="id">HF</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;2:{ <span class="tactic">inversion</span> <span class="id">HF</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Heq</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span> <span class="id">b0</span> <span class="id">ofs0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hvalid1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.eq_true">Int.eq_true</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_load">exec_load</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#load_mem">load_mem</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.loadv">Mem.loadv</a></span> <span class="id">eqn</span>: <span class="id">Hload</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id">k</span>; <span class="tactic">simpl</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hexe</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">v0</span>; <span class="tactic">inversion</span> <span class="id">Hexe</span>; <span class="tactic">clear</span> <span class="id">H0</span>; <span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">inversion</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="docright">(* Store  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#memory_region_mapping">memory_region_mapping</a></span> <span class="kwd">in</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#step_store_operation">step_store_operation</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.rBPFValues.html#sint32_to_vint">rBPFValues.sint32_to_vint</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hregion</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.comm.rBPFValues.html#cmp_ptr32_null">rBPFValues.cmp_ptr32_null</a></span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#check_mem_prop">check_mem_prop</a></span> <span class="kwd">in</span> <span class="id">Hregion</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Hregion</span> <span class="kwd">as</span> [(<span class="id">b0</span> &amp; <span class="id">ofs0</span> &amp;<span class="id">Heq</span> &amp; <span class="id">Hvalid1</span> &amp; <span class="id">Hvalid2</span>)| <span class="id">HF</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;2:{ <span class="tactic">inversion</span> <span class="id">HF</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">injection</span> <span class="id">Heq</span> <span class="kwd">as</span> <span class="id">Heq1</span> <span class="id">Heq2</span>; <span class="tactic">subst</span> <span class="id">b0</span> <span class="id">ofs0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hvalid1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.eq_true">Int.eq_true</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_store">exec_store</a></span> <span class="kwd">in</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.BSemanticsSimpl.html#store_mem">store_mem</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">ri</span> <span class="kwd">as</span> [<span class="id">src_r</span> | <span class="id">src_i</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> <span class="id">eqn</span>: <span class="id">Hload</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">destruct</span> <span class="id">k</span>; <span class="tactic">simpl</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hexe</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hexe</span>; <span class="tactic">clear</span> <span class="id">H0</span>; <span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">inversion</span> <span class="id">Hexe</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#Mem.storev">Mem.storev</a></span> <span class="id">eqn</span>: <span class="id">Hload</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">destruct</span> <span class="id">k</span>; <span class="tactic">simpl</span>; <span class="tactic">simpl</span> <span class="kwd">in</span> <span class="id">Hexe</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hexe</span>; <span class="tactic">clear</span> <span class="id">H0</span>; <span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="tactic">inversion</span> <span class="id">Hexe</span>.<br/>
+<br/>
+&nbsp;&nbsp;- <span class="docright">(* Call  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hcall</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">Hargs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H3</span> <span class="id">into</span> <span class="id">Hext</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H4</span> <span class="id">into</span> <span class="id">Hrs1</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span> <span class="kwd">in</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="id">eqn</span>: <span class="id">Hnth_pc</span>; [| <span class="tactic">inversion</span> <span class="id">Hfind</span>].<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">Hlen_max</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**r&nbsp;pc1&nbsp;&lt;=&nbsp;List.length&nbsp;c&nbsp;because&nbsp;of&nbsp;find_instr&nbsp;=&nbsp;Some&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Hle_pc</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intro</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HF</span> <span class="kwd">in</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">inversion</span> <span class="id">Hnth_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">Heq</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.cmpu">Int.cmpu</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Clt">Clt</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#length">Datatypes.length</a></span> <span class="id">c</span>))) = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hlen_max</span> <span class="id">Hnth_pc</span> <span class="id">Hle_pc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">simpl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.comm.LemmaInt.html#Clt_Zlt_unsigned">Clt_Zlt_unsigned</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">do</span> 2 (<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ]).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Heq</span>; <span class="tactic">clear</span> <span class="id">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>; [|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span> ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.Znat.html#Nat2Z.id">Nat2Z.id</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth_pc</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">erewrite</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#_bpf_get_call_equiv">_bpf_get_call_equiv</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span> <span class="id">rs</span>'.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">reflexivity</span>.<br/>
+Qed.</div>
+<span class="kwd">End</span> <span class="id"><a href="bpf.jit.TSSemanticsBequiv.html#Forward4">Forward4</a></span>.
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

@@ -1,0 +1,373 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module ThumbJIT2</title>
+<meta name="description" content="Documentation of Coq module ThumbJIT2" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module ThumbJIT2</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">Integers</span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.arm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">AsmSyntax</span> <span class="id">BinSyntax</span> <span class="id">BinDecode</span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">bpf.comm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">Flag</span> <span class="id">BinrBPF</span> <span class="id">ListAsArray</span> <span class="id">Regs</span>.<br/>
+<span class="kwd">From</span> <span class="id">bpf.rbpf32</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">TSSyntax</span> <span class="id">TSDecode</span> <span class="id">JITConfig</span>.<br/>
+<span class="kwd">From</span> <span class="id">bpf.jit</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">Arm32Reg</span> <span class="id">ThumbInsOp</span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id">List</span> <span class="id">ZArith</span> <span class="id">Arith</span> <span class="id">String</span> <span class="id">FSetList</span>.<br/>
+<span class="kwd">Import</span> <span class="id">ListNotations</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">Z_scope</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">bool_scope</span>.<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">asm</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">list_bin_insert</span> := <span class="id">List32.assign</span>'.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_thumb_mem_template_jit</span> (<span class="id">op</span> <span class="id">rt</span> <span class="id">rn</span> <span class="id">imm12</span>: <span class="id">int</span>): <span class="id">int</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">str_low</span>   := <span class="id">encode_arm32</span> <span class="id">rn</span> <span class="id">op</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">str_high</span>  := <span class="id">encode_arm32</span> <span class="id">rt</span> <span class="id">imm12</span> 12 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">encode_arm32</span> <span class="id">str_high</span> <span class="id">str_low</span> 16 16.<br/>
+<br/>
+<h1> Pre Stage: mov </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_pre</span> (<span class="id">b_pc</span>: <span class="id">nat</span>) (<span class="id">bl</span>: <span class="id">bin_code</span>): <span class="id">option</span> (<span class="id">nat</span> * <span class="id">bin_code</span>) :=<br/>
+ <span class="docright">(* 12 = 0b 1100  *)</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rdn</span> := <span class="id">encode_arm32</span> (<span class="id">Int.repr</span> 4) <span class="id">MOV_R_OP</span> 0 3 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rm</span>  := <span class="id">encode_arm32</span> <span class="id">Int.one</span>  <span class="id">ins_rdn</span> 3 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins</span>     := <span class="id">encode_arm32</span> <span class="id">Int.one</span> <span class="id">ins_rm</span> 7 1 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins</span> <span class="id">NOP_OP</span> 16 16 <span class="kwd">in</span><br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">str</span>   := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">STR_I_OP</span> (<span class="id">Int.repr</span> 11) (<span class="id">int_of_ireg</span> <span class="id">SP</span>) (<span class="id">Int.repr</span> 44) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">list_bin_insert</span> <span class="id">bl</span> <span class="id">b_pc</span> <span class="id">ins32</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">bl1</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">list_bin_insert</span> <span class="id">bl</span> (<span class="id">S</span> <span class="id">b_pc</span>) <span class="id">str</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">bl2</span> =&gt; <span class="id">Some</span> (<span class="id">S</span> (<span class="id">S</span> <span class="id">b_pc</span>), <span class="id">bl2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<h1> Jitted Code: from BPF alu32 to thumb alu </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_call_save_add</span> (<span class="id">r</span>: <span class="id">breg</span>) (<span class="id">ls</span>: <span class="id">listset</span>): <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">set_mem</span> <span class="id">breg_eq</span> <span class="id">r</span> <span class="id">ls</span> <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[]<br/>
+&nbsp;&nbsp;<span class="kwd">else</span><br/>
+ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ldr_ins</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">LDR_I_OP</span> (<span class="id">int_of_breg</span> <span class="id">r</span>) (<span class="id">int_of_ireg</span> <span class="id">IR12</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.mul</span> (<span class="id">int_of_breg</span> <span class="id">r</span>) (<span class="id">Int.repr</span> 4)) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">set_mem</span> <span class="id">ireg_eq</span> (<span class="id">ireg_of_breg</span> <span class="id">r</span>) <span class="id">arm_callee_save</span> <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">str_ins</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">STR_I_OP</span> (<span class="id">int_of_breg</span> <span class="id">r</span>) (<span class="id">int_of_ireg</span> <span class="id">SP</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.mul</span> (<span class="id">int_of_breg</span> <span class="id">r</span>) (<span class="id">Int.repr</span> 4)) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">str_ins</span>; <span class="id">ldr_ins</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">ldr_ins</span>].<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_call_save_reg</span> (<span class="id">dst</span> <span class="id">src</span>: <span class="id">breg</span>) (<span class="id">ld_set</span> <span class="id">st_set</span>: <span class="id">listset</span>): <span class="id">bin_code</span> * <span class="id">listset</span> * <span class="id">listset</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l1</span> := <span class="id">jit_call_save_add</span> <span class="id">dst</span> <span class="id">ld_set</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ld_set1</span> := <span class="id">set_add</span> <span class="id">breg_eq</span> <span class="id">dst</span> <span class="id">ld_set</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">st_set1</span> := <span class="id">set_add</span> <span class="id">breg_eq</span> <span class="id">dst</span> <span class="id">st_set</span> <span class="kwd">in</span><br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l2</span> := <span class="id">jit_call_save_add</span> <span class="id">src</span> <span class="id">ld_set1</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ld_set2</span> := <span class="id">set_add</span> <span class="id">breg_eq</span> <span class="id">src</span> <span class="id">ld_set1</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">l1</span> ++ <span class="id">l2</span>, <span class="id">ld_set2</span>, <span class="id">st_set1</span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_call_save_imm</span> (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">ld_set</span> <span class="id">st_set</span>: <span class="id">listset</span>): <span class="id">bin_code</span> * <span class="id">listset</span> * <span class="id">listset</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l1</span> := <span class="id">jit_call_save_add</span> <span class="id">dst</span> (<span class="id">set_union</span> <span class="id">breg_eq</span> <span class="id">ld_set</span> <span class="id">st_set</span>) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">l1</span>, <span class="id">set_add</span> <span class="id">breg_eq</span> <span class="id">dst</span> <span class="id">ld_set</span>, <span class="id">set_add</span> <span class="id">breg_eq</span> <span class="id">dst</span> <span class="id">st_set</span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">bpf_alu32_to_thumb_reg_comm</span> (<span class="id">op</span>: <span class="id">int</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">src</span>: <span class="id">ireg</span>) : <span class="id">int</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">op</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">int_of_ireg</span> <span class="id">src</span>) 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">bpf_alu32_to_thumb_reg</span> (<span class="id">op</span>: <span class="id">aluOp</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">src</span>: <span class="id">ireg</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">op</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">ADD</span>   =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">d</span>       := <span class="kwd">if</span> <span class="id">Int.lt</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">then</span> <span class="id">Int.zero</span> <span class="kwd">else</span> <span class="id">Int.one</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">rdn</span>     := <span class="kwd">if</span> <span class="id">Int.lt</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">int_of_breg</span> <span class="id">dst</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Int.sub</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rdn</span> := <span class="id">encode_arm32</span> <span class="id">rdn</span> <span class="id">ADD_R_OP</span> 0 3 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rm</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">src</span>) <span class="id">ins_rdn</span> 3 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins</span>     := <span class="id">encode_arm32</span> <span class="id">d</span> <span class="id">ins_rm</span> 7 1 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins</span> <span class="id">NOP_OP</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;| <span class="id">SUB</span>   =&gt; <span class="id">Some</span> [<span class="id">bpf_alu32_to_thumb_reg_comm</span> <span class="id">SUB_R_OP</span> <span class="id">dst</span> <span class="id">src</span>]<br/>
+&nbsp;&nbsp;| <span class="id">MUL</span>   =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">MUL_OP</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi0</span> := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">int_of_ireg</span> <span class="id">src</span>) 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>  := <span class="id">encode_arm32</span> (<span class="id">Int.repr</span> 0<span class="id">xf</span>) <span class="id">ins_hi0</span> 12 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;| <span class="id">DIV</span>   =&gt; <span class="id">None</span><br/>
+<br/>
+&nbsp;&nbsp;| <span class="id">OR</span>    =&gt; <span class="id">Some</span> [<span class="id">bpf_alu32_to_thumb_reg_comm</span> <span class="id">ORR_R_OP</span> <span class="id">dst</span> <span class="id">src</span>]<br/>
+&nbsp;&nbsp;| <span class="id">AND</span>   =&gt; <span class="id">Some</span> [<span class="id">bpf_alu32_to_thumb_reg_comm</span> <span class="id">AND_R_OP</span> <span class="id">dst</span> <span class="id">src</span>]<br/>
+&nbsp;&nbsp;| <span class="id">LSH</span>   =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">RSH</span>   =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">NEG</span>   =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">MOD</span>   =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">XOR</span>   =&gt; <span class="id">Some</span> [<span class="id">bpf_alu32_to_thumb_reg_comm</span> <span class="id">EOR_R_OP</span> <span class="id">dst</span> <span class="id">src</span>]<br/>
+&nbsp;&nbsp;| <span class="id">MOV</span>   =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">reg_ireg_eqb</span> <span class="id">dst</span> <span class="id">src</span> <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> []<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">d</span>       := <span class="kwd">if</span> <span class="id">Int.lt</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">then</span> <span class="id">Int.zero</span> <span class="kwd">else</span> <span class="id">Int.one</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">rdn</span>     := <span class="kwd">if</span> <span class="id">Int.lt</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">int_of_breg</span> <span class="id">dst</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Int.sub</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">Int.repr</span> 8) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rdn</span> := <span class="id">encode_arm32</span> <span class="id">rdn</span> <span class="id">MOV_R_OP</span> 0 3 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rm</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">src</span>)  <span class="id">ins_rdn</span> 3 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins</span>     := <span class="id">encode_arm32</span> <span class="id">d</span> <span class="id">ins_rm</span> 7 1 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins</span> <span class="id">NOP_OP</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;| <span class="id">ARSH</span>  =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">mov_int_to_movwt</span> (<span class="id">i</span>: <span class="id">int</span>) (<span class="id">r</span>: <span class="id">ireg</span>) (<span class="id">op</span>: <span class="id">int</span>): <span class="id">int</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_imm8</span>   := <span class="id">decode_arm32</span> <span class="id">i</span> 0  8 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_imm3</span>   := <span class="id">decode_arm32</span> <span class="id">i</span> 8  3 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_i</span>      := <span class="id">decode_arm32</span> <span class="id">i</span> 11 1 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_imm4</span>   := <span class="id">decode_arm32</span> <span class="id">i</span> 12 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">movw_lo_0</span> := <span class="id">encode_arm32</span> <span class="id">lo_imm4</span> <span class="id">op</span>        0  4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">movw_lo</span>   := <span class="id">encode_arm32</span> <span class="id">lo_i</span>    <span class="id">movw_lo_0</span> 10 1 <span class="kwd">in</span><br/>
+<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">movw_hi_0</span> := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">r</span>) <span class="id">lo_imm8</span> 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">movw_hi</span>   := <span class="id">encode_arm32</span> <span class="id">lo_imm3</span> <span class="id">movw_hi_0</span> 12 3 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">encode_arm32</span> <span class="id">movw_hi</span> <span class="id">movw_lo</span> 16 16.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">bpf_alu32_to_thumb_imm_comm</span> (<span class="id">op</span>: <span class="id">int</span>) (<span class="id">alu_op</span>: <span class="id">aluOp</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">imm32</span>: <span class="id">int</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> (<span class="id">Int.cmpu</span> <span class="id">Cle</span> <span class="id">Int.zero</span> <span class="id">imm32</span>) &amp;&amp; (<span class="id">Int.cmpu</span> <span class="id">Cle</span> <span class="id">imm32</span> (<span class="id">Int.repr</span> 255)) <span class="kwd">then</span> <span class="docright">(* 0 &lt;= imm32 &lt;= 255  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>    := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">op</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>    := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">imm32</span> 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>     := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 0 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">hi_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">lo_32</span> <span class="id">imm32</span> <span class="kwd">then</span> <span class="docright">(* optimization: if high_16 = 0 then only add `movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_reg</span> <span class="id">alu_op</span> <span class="id">dst</span> <span class="id">IR11</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l</span> =&gt; <span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) :: <span class="id">l</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <span class="docright">(* optimization: if high_16 &lt;&gt; 0 then add`movt + movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_reg</span> <span class="id">alu_op</span> <span class="id">dst</span> <span class="id">IR11</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) :: (<span class="id">mov_int_to_movwt</span> <span class="id">hi_32</span> <span class="id">IR11</span> <span class="id">MOVT_OP</span>) :: <span class="id">l</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">bpf_alu32_to_thumb_imm_shift_comm</span> (<span class="id">op</span>: <span class="id">int</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">imm32</span>: <span class="id">int</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> (<span class="id">Int.cmpu</span> <span class="id">Cle</span> <span class="id">Int.zero</span> <span class="id">imm32</span>) &amp;&amp; (<span class="id">Int.cmpu</span> <span class="id">Clt</span> <span class="id">imm32</span> (<span class="id">Int.repr</span> 32)) <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">op</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi0</span> := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) (<span class="id">int_of_ireg</span> <span class="id">IR11</span>) 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>  := <span class="id">encode_arm32</span> (<span class="id">Int.repr</span> 0<span class="id">xf</span>) <span class="id">ins_hi0</span> 12 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">mov_int_to_movwt</span> <span class="id">imm32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>; <span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">None</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">bpf_alu32_to_thumb_imm</span> (<span class="id">op</span>: <span class="id">aluOp</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">imm32</span>: <span class="id">int</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">op</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">ADD</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_comm</span> <span class="id">ADD_I_OP</span> <span class="id">ADD</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">SUB</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_comm</span> <span class="id">SUB_I_OP</span> <span class="id">SUB</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">MUL</span>   =&gt; <span class="docright">(* CompCert doesn't have mul_imm, so we do `mov + mul_reg`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 0 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">hi_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">lo_32</span> <span class="id">imm32</span> <span class="kwd">then</span> <span class="docright">(* optimization: if high_16 = 0 then only add `movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_reg</span> <span class="id">MUL</span> <span class="id">dst</span> <span class="id">IR11</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l</span> =&gt; <span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) :: <span class="id">l</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <span class="docright">(* optimization: if high_16 &lt;&gt; 0 then add`movt + movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_reg</span> <span class="id">MUL</span> <span class="id">dst</span> <span class="id">IR11</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l</span> =&gt; <span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) ::<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">mov_int_to_movwt</span> <span class="id">hi_32</span> <span class="id">IR11</span> <span class="id">MOVT_OP</span>) :: <span class="id">l</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;| <span class="id">DIV</span>   =&gt; <span class="docright">(* CompCert doesn't have div_imm, so we do `mov + div_reg`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">imm32</span> <span class="id">Int.zero</span> <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">UDIV_LO_OP</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi0</span> := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">UDIV_HI_OP</span> 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>  := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">IR11</span>) <span class="id">ins_hi0</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>   := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 0 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">hi_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">lo_32</span> <span class="id">imm32</span> <span class="kwd">then</span> <span class="docright">(* optimization: if high_16 = 0 then only add `movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>; <span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <span class="docright">(* optimization: if high_16 &lt;&gt; 0 then add`movt + movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>; <span class="id">mov_int_to_movwt</span> <span class="id">hi_32</span> <span class="id">IR11</span> <span class="id">MOVT_OP</span>; <span class="id">ins32</span>]<br/>
+<br/>
+&nbsp;&nbsp;| <span class="id">OR</span>    =&gt; <span class="id">bpf_alu32_to_thumb_imm_comm</span> <span class="id">ORR_I_OP</span> <span class="id">OR</span>  <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">AND</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_comm</span> <span class="id">AND_I_OP</span> <span class="id">AND</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">LSH</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_shift_comm</span> <span class="id">LSL_R_OP</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">RSH</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_shift_comm</span> <span class="id">LSR_R_OP</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">NEG</span>   =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>    := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">IR11</span>) <span class="id">RSB_I_OP</span> 0 4 <span class="kwd">in</span> <span class="docright">(* dst = 0 - IR11  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>    := <span class="id">encode_arm32</span> (<span class="id">int_of_breg</span> <span class="id">dst</span>) <span class="id">Int.zero</span> 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>     := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 0 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">hi_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">lo_32</span> <span class="id">imm32</span> <span class="kwd">then</span> <span class="docright">(* optimization: if high_16 = 0 then only add `movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) :: [<span class="id">ins32</span>])<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <span class="docright">(* optimization: if high_16 &lt;&gt; 0 then add`movt + movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> ((<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> <span class="id">IR11</span> <span class="id">MOVW_OP</span>) ::<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">mov_int_to_movwt</span> <span class="id">hi_32</span> <span class="id">IR11</span> <span class="id">MOVT_OP</span>) :: [<span class="id">ins32</span>])<br/>
+&nbsp;&nbsp;| <span class="id">MOD</span>   =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">XOR</span>   =&gt; <span class="id">bpf_alu32_to_thumb_imm_comm</span> <span class="id">EOR_I_OP</span> <span class="id">XOR</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;| <span class="id">MOV</span>   =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">lo_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 0 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">hi_32</span> := <span class="id">decode_arm32</span> <span class="id">imm32</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> <span class="id">Int.eq</span> <span class="id">lo_32</span> <span class="id">imm32</span> <span class="kwd">then</span> <span class="docright">(* optimization: if high_16 = 0 then only add `movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> (<span class="id">ireg_of_breg</span> <span class="id">dst</span>) <span class="id">MOVW_OP</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span> <span class="docright">(* optimization: if high_16 &lt;&gt; 0 then add`movt + movw`  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">mov_int_to_movwt</span> <span class="id">lo_32</span> (<span class="id">ireg_of_breg</span> <span class="id">dst</span>) <span class="id">MOVW_OP</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">mov_int_to_movwt</span> <span class="id">hi_32</span> (<span class="id">ireg_of_breg</span> <span class="id">dst</span>) <span class="id">MOVT_OP</span>)]<br/>
+&nbsp;&nbsp;| <span class="id">ARSH</span>  =&gt; <span class="id">bpf_alu32_to_thumb_imm_shift_comm</span> <span class="id">ASR_R_OP</span> <span class="id">dst</span> <span class="id">imm32</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_one</span> (<span class="id">op</span>:<span class="id">aluOp</span>) (<span class="id">dst</span>: <span class="id">breg</span>) (<span class="id">src</span>: <span class="id">breg</span>+<span class="id">imm</span>) (<span class="id">ld_set</span> <span class="id">st_set</span>: <span class="id">listset</span>):<br/>
+&nbsp;&nbsp;<span class="id">option</span> (<span class="id">bin_code</span> * <span class="id">listset</span> * <span class="id">listset</span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">src</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">inl</span> <span class="id">r</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> '(<span class="id">l1</span>, <span class="id">ld_set1</span>, <span class="id">st_set1</span>) := <span class="id">jit_call_save_reg</span> <span class="id">dst</span> <span class="id">r</span> <span class="id">ld_set</span> <span class="id">st_set</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_reg</span> <span class="id">op</span> <span class="id">dst</span> (<span class="id">ireg_of_breg</span> <span class="id">r</span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l2</span> =&gt; <span class="id">Some</span> (<span class="id">l1</span> ++ <span class="id">l2</span>, <span class="id">ld_set1</span>, <span class="id">st_set1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;| <span class="id">inr</span> <span class="id">i</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> '(<span class="id">l1</span>, <span class="id">ld_set1</span>, <span class="id">st_set1</span>) := <span class="id">jit_call_save_imm</span> <span class="id">dst</span> <span class="id">ld_set</span> <span class="id">st_set</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">bpf_alu32_to_thumb_imm</span> <span class="id">op</span> <span class="id">dst</span> <span class="id">i</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l2</span> =&gt; <span class="id">Some</span> (<span class="id">l1</span> ++ <span class="id">l2</span>, <span class="id">ld_set1</span>, <span class="id">st_set1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id">jit_sequence</span> (<span class="id">l</span>: <span class="id">bpf_code</span>) (<span class="id">ld_set</span> <span class="id">st_set</span>: <span class="id">listset</span>):<br/>
+&nbsp;&nbsp;<span class="id">option</span> (<span class="id">bin_code</span> * <span class="id">listset</span> * <span class="id">listset</span>) :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">l</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [] =&gt; <span class="id">Some</span> ([], <span class="id">ld_set</span>, <span class="id">st_set</span>)<br/>
+&nbsp;&nbsp;| <span class="id">hd</span> :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">hd</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Palu32</span> <span class="id">op</span> <span class="id">dst</span> <span class="id">src</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_one</span> <span class="id">op</span> <span class="id">dst</span> <span class="id">src</span> <span class="id">ld_set</span> <span class="id">st_set</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> (<span class="id">l1</span>, <span class="id">ld1</span>, <span class="id">st1</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_sequence</span> <span class="id">tl</span> <span class="id">ld1</span> <span class="id">st1</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> (<span class="id">l2</span>, <span class="id">ld2</span>, <span class="id">st2</span>) =&gt; <span class="id">Some</span> (<span class="id">l1</span>++<span class="id">l2</span>, <span class="id">ld2</span>, <span class="id">st2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_thumb_pc_add</span> (<span class="id">imm32</span>: <span class="id">int</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">if</span> (<span class="id">Int.cmpu</span> <span class="id">Cle</span> <span class="id">Int.zero</span> <span class="id">imm32</span>) &amp;&amp; (<span class="id">Int.cmpu</span> <span class="id">Cle</span> <span class="id">imm32</span> (<span class="id">Int.repr</span> 255)) <span class="kwd">then</span> <span class="docright">(* 0 &lt;= imm32 &lt;= 255  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_lo</span>    := <span class="id">encode_arm32</span> (<span class="id">Int.repr</span> 11) <span class="id">ADD_I_OP</span> 0 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_hi</span>    := <span class="id">encode_arm32</span> (<span class="id">Int.repr</span> 11) <span class="id">imm32</span> 8 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>     := <span class="id">encode_arm32</span> <span class="id">ins_hi</span> <span class="id">ins_lo</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> [<span class="id">ins32</span>]<br/>
+&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">None</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_thumb_pc</span> (<span class="id">num</span>: <span class="id">nat</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_alu32_thumb_pc_add</span> (<span class="id">Int.repr</span> (<span class="id">Z.of_nat</span> <span class="id">num</span>)) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_ldr</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">LDR_I_OP</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.repr</span> 11) (<span class="id">int_of_ireg</span> <span class="id">IR12</span>) (<span class="id">Int.repr</span> 44) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_str</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">STR_I_OP</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.repr</span> 11) (<span class="id">int_of_ireg</span> <span class="id">IR12</span>) (<span class="id">Int.repr</span> 44) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> ([<span class="id">l_ldr</span>] ++ <span class="id">l</span> ++ [<span class="id">l_str</span>])<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<h1> Store Stage: Store selected arm32 registers into corresponding BPF registers </h1>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id">jit_alu32_thumb_store</span> (<span class="id">st_set</span>: <span class="id">listset</span>): <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">st_set</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [] =&gt; []<br/>
+&nbsp;&nbsp;| <span class="id">hd</span> :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_str</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">STR_I_OP</span> (<span class="id">int_of_breg</span> <span class="id">hd</span>) (<span class="id">int_of_ireg</span> <span class="id">IR12</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.mul</span> (<span class="id">int_of_breg</span> <span class="id">hd</span>) (<span class="id">Int.repr</span> 4)) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">l_str</span>] ++ (<span class="id">jit_alu32_thumb_store</span> <span class="id">tl</span>)<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<h1> Reset Stage: recover the initial value of selected arm32 registers </h1>
+<br/>
+<div class="doc">@input
+  * @r   : pop register r from the stack
+  * @output
+  * @ins :  binary format of `ldr r <span class="bracket"><span class="id">sp</span>, #+<span class="id">ofs</span></span>` where we use `ldr` to implement `pop`
+  </div>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id">jit_alu32_thumb_reset1</span> (<span class="id">ld_set</span>: <span class="id">listset</span>): <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">ld_set</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| [] =&gt; []<br/>
+&nbsp;&nbsp;| <span class="id">hd</span> :: <span class="id">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">if</span> (<span class="id">Int.ltu</span> (<span class="id">Int.repr</span> 3) (<span class="id">int_of_breg</span> <span class="id">hd</span>)) &amp;&amp; (<span class="id">Int.ltu</span> (<span class="id">int_of_breg</span> <span class="id">hd</span>) (<span class="id">Int.repr</span> 11)) <span class="kwd">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_ldr</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">LDR_I_OP</span> (<span class="id">int_of_breg</span> <span class="id">hd</span>) (<span class="id">int_of_ireg</span> <span class="id">IR13</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">Int.mul</span> (<span class="id">int_of_breg</span> <span class="id">hd</span>) (<span class="id">Int.repr</span> 4)) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">l_ldr</span>] ++ (<span class="id">jit_alu32_thumb_reset1</span> <span class="id">tl</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">jit_alu32_thumb_reset1</span> <span class="id">tl</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_thumb_reset</span> (<span class="id">ld_set</span>: <span class="id">listset</span>): <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_ldr</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">LDR_I_OP</span> (<span class="id">Int.repr</span> 11) (<span class="id">int_of_ireg</span> <span class="id">IR13</span>) (<span class="id">Int.repr</span> 44) <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">l_ldr</span>] ++ <span class="id">jit_alu32_thumb_reset1</span> <span class="id">ld_set</span>.<br/>
+<br/>
+<div class="doc">Post: LDR SP <span class="bracket"><span class="id">SP</span>, #+0</span>; BX LR </div>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_post</span>: <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">l_ldr</span> := <span class="id">jit_alu32_thumb_mem_template_jit</span> <span class="id">LDR_I_OP</span> (<span class="id">int_of_ireg</span> <span class="id">SP</span>) (<span class="id">int_of_ireg</span> <span class="id">SP</span>) <span class="id">Int.zero</span> <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins_rm</span>   := <span class="id">encode_arm32</span> (<span class="id">int_of_ireg</span> <span class="id">RA</span>) <span class="id">BX_OP</span> 3 4 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;<span class="kwd">let</span> <span class="id">ins32</span>    := <span class="id">encode_arm32</span> <span class="id">ins_rm</span> <span class="id">NOP_OP</span> 16 16 <span class="kwd">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id">l_ldr</span>] ++ [<span class="id">ins32</span>].<br/>
+<br/>
+<h1> Jit Procedure </h1>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32_aux</span> (<span class="id">l</span>: <span class="id">bpf_code</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_sequence</span> <span class="id">l</span> [] [] <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">Some</span> (<span class="id">cl</span>, <span class="id">ld_set</span>, <span class="id">st_set</span>) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">cl</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [] =&gt; <span class="id">None</span> <span class="docright">(* we don't want this case, wher should we put this check?  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">_</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_alu32_thumb_pc</span> (<span class="id">List.length</span> <span class="id">l</span>) <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">l_pc</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id">Some</span> (<span class="id">cl</span> ++ <span class="id">l_pc</span> ++ (<span class="id">jit_alu32_thumb_store</span> <span class="id">st_set</span>) ++<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">jit_alu32_thumb_reset</span> <span class="id">ld_set</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id">jit_alu32</span> (<span class="id">l</span>: <span class="id">bpf_code</span>): <span class="id">option</span> <span class="id">bin_code</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id">jit_alu32_aux</span> <span class="id">l</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| <span class="id">None</span> =&gt; <span class="id">None</span><br/>
+&nbsp;&nbsp;| <span class="id">Some</span> <span class="id">bl</span> =&gt; <span class="id">Some</span> (<span class="id">jit_alu32_pre</span> ++ (<span class="id">bl</span> ++ <span class="id">jit_alu32_post</span>))<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="id">Close</span> <span class="kwd">Scope</span> <span class="id">asm</span>.<br/>
+<span class="id">Close</span> <span class="kwd">Scope</span> <span class="id">bool_scope</span>.<br/>
+<span class="id">Close</span> <span class="kwd">Scope</span> <span class="id">Z_scope</span>.
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

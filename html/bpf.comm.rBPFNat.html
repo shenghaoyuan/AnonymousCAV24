@@ -1,0 +1,51 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module rBPFNat</title>
+<meta name="description" content="Documentation of Coq module rBPFNat" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module rBPFNat</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html">Integers</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="int_of_nat">int_of_nat</a></span> (<span class="id">n</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>) := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">n</span>).<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="int16_of_nat">int16_of_nat</a></span> (<span class="id">n</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>) := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">n</span>).<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_of_int">nat_of_int</a></span> (<span class="id">i</span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#int">int</a></span>) := <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.to_nat">Z.to_nat</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> <span class="id">i</span>).<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="int64_of_nat">int64_of_nat</a></span> (<span class="id">n</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span>) := <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int64.repr">Int64.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">n</span>).<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_1">nat_1</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 1.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_2">nat_2</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 2.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_3">nat_3</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 3.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_4">nat_4</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 4.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_5">nat_5</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 5.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_6">nat_6</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 6.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_7">nat_7</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 7.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_8">nat_8</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 8.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_9">nat_9</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 9.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_10">nat_10</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 10.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_11">nat_11</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 11.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_12">nat_12</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 12.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_13">nat_13</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 13.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_14">nat_14</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 14.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_15">nat_15</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 15.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_16">nat_16</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 16.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_17">nat_17</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 17.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_18">nat_18</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 18.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_19">nat_19</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 19.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_20">nat_20</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 20.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_24">nat_24</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 24.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_27">nat_27</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 27.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_28">nat_28</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 28.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="nat_32">nat_32</a></span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nat">nat</a></span> := 32.
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>

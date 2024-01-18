@@ -1,0 +1,12 @@
+
+incr.o:	file format ELF64-BPF
+
+
+Disassembly of section .text:
+
+0000000000000000 incr:
+; {
+       0:	bc 10 00 00 00 00 00 00	w0 = w1
+;   return x+1;
+       1:	04 00 00 00 01 00 00 00	w0 += 1
+       2:	95 00 00 00 00 00 00 00	exit

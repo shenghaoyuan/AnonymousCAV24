@@ -1,0 +1,129 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module TSSemanticsAproof</title>
+<meta name="description" content="Documentation of Coq module TSSemanticsAproof" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module TSSemanticsAproof</h1>
+<div class="coq">
+<span class="kwd">From</span> <span class="id">compcert.lib</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html">Integers</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Coqlib.html">Coqlib</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Maps.html">Maps</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.common</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html">AST</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html">Values</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html">Events</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Globalenvs.html">Globalenvs</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html">Memory</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memtype.html">Memtype</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html">Events</a></span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html">Smallstep</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">compcert.cfrontend</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.cfrontend.Ctypes.html">Ctypes</a></span>. <br/>
+<span class="kwd">From</span> <span class="id">compcert.arm</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.arm.ABinSem.html">ABinSem</a></span>.<br/>
+<span class="kwd">From</span> <span class="id">Coq</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.ZArith.html">ZArith</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.micromega.Lia.html">Lia</a></span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">List</a></span>.<br/>
+<br/>
+<span class="kwd">From</span> <span class="id">bpf.rbpf32</span> <span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html">TSSyntax</a></span> <span class="id"><a href="bpf.rbpf32.TSDecode.html">TSDecode</a></span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html">TSSemantics</a></span> <span class="id"><a href="bpf.rbpf32.TSSemanticsA.html">TSSemanticsA</a></span> <span class="id"><a href="bpf.rbpf32.Analyzer.html">Analyzer</a></span>.<br/>
+<br/>
+<span class="kwd">Open</span> <span class="kwd">Scope</span> <span class="id">nat_scope</span>.<br/>
+<span class="kwd">Import</span> <span class="id">ListNotations</span>.<br/>
+<br/>
+<span class="kwd">Section</span> <span class="id"><a name="JITBackwardSimulationProof">JITBackwardSimulationProof</a></span>.<br/>
+<br/>
+<span class="kwd">Hypothesis</span> <span class="id"><a name="JITBackwardSimulationProof._bpf_get_call">_bpf_get_call</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#ident">ident</a></span> -&gt; <span class="id"><a href="bpf.rbpf32.TSSyntax.html#genv">genv</a></span> -&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#option">option</a></span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#fundef">fundef</a></span>.<br/>
+<span class="kwd">Hypothesis</span> <span class="id"><a name="JITBackwardSimulationProof.memory_region_map">memory_region_map</a></span>: <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memory.html#mem">mem</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Memtype.html#permission">permission</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.AST.html#memory_chunk">memory_chunk</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#val">val</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#block">block</a></span> -&gt; <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#ptrofs">ptrofs</a></span> -&gt; <span class="kwd">Prop</span>.<br/>
+<br/>
+<span class="kwd">Lemma</span> <span class="id"><a name="exec_alu32_list_code_subset">exec_alu32_list_code_subset</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">l</span> <span class="id">ge</span> <span class="id">bpf_get_call</span> <span class="id">mem_map</span> <span class="id">c</span> <span class="id">v</span> <span class="id">rs</span> <span class="id">m</span> <span class="id">rs</span>' <span class="id">m</span>'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HMAX</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span> &lt;= <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HPC</span>: <span class="id">rs</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HEXE</span> : <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_alu32_list">exec_alu32_list</a></span> <span class="id">l</span> <span class="id">rs</span> <span class="id">m</span> = <span class="kwd">Next</span> <span class="id">rs</span>' <span class="id">m</span>')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id">HSUB</span> : <span class="id"><a href="bpf.rbpf32.Analyzer.html#code_subset">code_subset</a></span> <span class="id">l</span> <span class="id">v</span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#true">true</a></span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star">star</a></span> (<span class="id"><a href="bpf.rbpf32.TSSemantics.html#step">step</a></span> <span class="id">bpf_get_call</span> <span class="id">mem_map</span> <span class="id">c</span>) <span class="id">ge</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs</span> <span class="id">m</span>) <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html#E0">E0</a></span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs</span>' <span class="id">m</span>').<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof1')">Proof.</div>
+<div class="proofscript" id="proof1">
+&nbsp;&nbsp;<span class="tactic">induction</span> <span class="id">l</span>; <span class="tactic">simpl</span>; <span class="tactic">intros</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">inversion</span> <span class="id">HEXE</span>; <span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_refl">star_refl</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">destruct</span> <span class="id">a</span>; <span class="tactic">inversion</span> <span class="id">HEXE</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_alu32">exec_alu32</a></span> <span class="kwd">as</span> [<span class="id">rs1</span> <span class="id">m1</span> | ] <span class="id">eqn</span>: <span class="id">He</span>; [| <span class="tactic">inversion</span> <span class="id">HEXE</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error">nth_error</a></span> <span class="kwd">as</span> [<span class="id">ins</span> | ] <span class="id">eqn</span>: <span class="id">Hnth</span>; [| <span class="tactic">inversion</span> <span class="id">HSUB</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#decode_ind">decode_ind</a></span> <span class="kwd">as</span> [<span class="id">bpf_ins</span> | ] <span class="id">eqn</span>: <span class="id">Hbpf</span>; [| <span class="tactic">inversion</span> <span class="id">HSUB</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.Analyzer.html#instruction_alu32_eqb">instruction_alu32_eqb</a></span> <span class="id">eqn</span>: <span class="id">Halu32</span>; [| <span class="tactic">inversion</span> <span class="id">HSUB</span>].<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">HLE</span>: <span class="id">v</span> &lt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span>). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Hnth</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_Some">nth_error_Some</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth</span>. <span class="tactic">intro</span> <span class="id">HF</span>; <span class="tactic">inversion</span> <span class="id">HF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> <span class="kwd">in</span> <span class="id">HMAX</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">HPC1</span> : <span class="id">rs1</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPC">BPC</a></span> = <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vint">Vint</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">v</span>)))). {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">HMAX</span> <span class="id">HPC</span> <span class="id">HLE</span> <span class="id">He</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#exec_alu32">exec_alu32</a></span> <span class="kwd">in</span> <span class="id">He</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#eval_alu32">eval_alu32</a></span> <span class="kwd">as</span> [<span class="id">va</span> | ] <span class="id">eqn</span>: <span class="id">HA</span>; [| <span class="tactic">inversion</span> <span class="id">He</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#nextinstr">nextinstr</a></span> <span class="kwd">in</span> <span class="id">He</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">va</span> <span class="kwd">as</span> [| <span class="id">vi</span> | | | |]; <span class="tactic">inversion</span> <span class="id">He</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPregmap.gss">BPregmap.gss</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> ! <span class="id"><a href="bpf.rbpf32.TSSyntax.html#BPregmap.gso">BPregmap.gso</a></span>. 2:{ <span class="tactic">clear</span>; <span class="tactic">intro</span> <span class="id">HF</span>; <span class="tactic">inversion</span> <span class="id">HF</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">HPC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">HMAX</span> <span class="id">HLE</span>. <span class="docright">(* we need to show v is less than int_max  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Val.add">Val.add</a></span>, <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Values.html#Vone">Vone</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.add">Int.add</a></span>, <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.one">Int.one</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned_repr">Int.unsigned_repr</a></span>. 2:{ <span class="tactic">change</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.max_unsigned">Int.max_unsigned</a></span> <span class="kwd">with</span> 4294967295%<span class="id">Z</span>; <span class="id">lia</span>. }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">change</span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.unsigned">Int.unsigned</a></span> (<span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.repr">Int.repr</a></span> 1)) <span class="kwd">with</span> 1%<span class="id">Z</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">replace</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> <span class="id">v</span> + 1)%<span class="id">Z</span> <span class="kwd">with</span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.ZArith.BinInt.html#Z.of_nat">Z.of_nat</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#S">S</a></span> <span class="id">v</span>)) <span class="tactic">by</span> <span class="id">lia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_left">star_left</a></span> <span class="kwd">with</span> (<span class="id">t1</span> := <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Events.html#E0">E0</a></span>); <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_alu32">exec_step_alu32</a></span>; <span class="tactic">eauto</span>.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.TSDecode.html#find_instr">find_instr</a></span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hnth</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> <span class="id">Hbpf</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> - <span class="id">Halu32</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">unfold</span> <span class="id"><a href="bpf.rbpf32.Analyzer.html#instruction_alu32_eqb">instruction_alu32_eqb</a></span> <span class="kwd">in</span> <span class="id">Halu32</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">bpf_ins</span>; <span class="tactic">inversion</span> <span class="id">Halu32</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">clear</span> <span class="id">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> ! <span class="id"><a href="http://coq.inria.fr/library/Coq.Bool.Bool.html#andb_true_iff">andb_true_iff</a></span> <span class="kwd">in</span> <span class="id">Halu32</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">Halu32</span> <span class="kwd">as</span> ((<span class="id">Heq1</span> &amp; <span class="id">Heq2</span>) &amp; <span class="id">Heq3</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#aluOp_eqb_true">aluOp_eqb_true</a></span> <span class="kwd">in</span> <span class="id">Heq1</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb_true">breg_eqb_true</a></span> <span class="kwd">in</span> <span class="id">Heq2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">destruct</span> <span class="id">s</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id">s0</span>; [| <span class="tactic">inversion</span> <span class="id">Heq3</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rewrite</span> &lt;- <span class="id"><a href="bpf.rbpf32.TSSyntax.html#breg_eqb_true">breg_eqb_true</a></span> <span class="kwd">in</span> <span class="id">Heq3</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="tactic">destruct</span> <span class="id">s0</span>; [<span class="tactic">inversion</span> <span class="id">Heq3</span> | ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.lib.Integers.html#Int.same_if_eq">Int.same_if_eq</a></span> <span class="kwd">in</span> <span class="id">Heq3</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">subst</span>; <span class="tactic">auto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">Theorem</span> <span class="id"><a name="astep_backward_simulation">astep_backward_simulation</a></span>:<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> <span class="id">ge</span> <span class="id">bpf_get_call</span> <span class="id">mem_map</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">rs0</span> <span class="id">m0</span> <span class="id">t</span> <span class="id">rs1</span> <span class="id">m1</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.TSSemanticsA.html#astep">astep</a></span> <span class="id">bpf_get_call</span> <span class="id">mem_map</span> <span class="id">c</span> <span class="id">kl</span> <span class="id">ge</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs0</span> <span class="id">m0</span>) <span class="id">t</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs1</span> <span class="id">m1</span>) -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#length">List.length</a></span> <span class="id">c</span> &lt;= <span class="id"><a href="bpf.rbpf32.TSSyntax.html#MAX_BPF_LIST_INPUT">MAX_BPF_LIST_INPUT</a></span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer">analyzer</a></span> <span class="id">c</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> <span class="id">kl</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star">star</a></span> (<span class="id"><a href="bpf.rbpf32.TSSemantics.html#step">step</a></span> <span class="id">bpf_get_call</span> <span class="id">mem_map</span> <span class="id">c</span>) <span class="id">ge</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs0</span> <span class="id">m0</span>) <span class="id">t</span> (<span class="id"><a href="bpf.rbpf32.TSSyntax.html#State">State</a></span> <span class="id">rs1</span> <span class="id">m1</span>).<br/>
+<div class="toggleproof" onclick="toggleDisplay('proof2')">Proof.</div>
+<div class="proofscript" id="proof2">
+&nbsp;&nbsp;<span class="tactic">induction</span> 1.<br/>
+&nbsp;&nbsp;- <span class="docright">(* exec_step_alu32  *)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H</span> <span class="id">into</span> <span class="id">PC</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H0</span> <span class="id">into</span> <span class="id">Hfind</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H1</span> <span class="id">into</span> <span class="id">Hnth</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">rename</span> <span class="id">H2</span> <span class="id">into</span> <span class="id">HEXE</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">intros</span> <span class="id">HINV</span> <span class="id">HA</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">apply</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#nth_error_In">nth_error_In</a></span> <span class="kwd">in</span> <span class="id">Hnth</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.Analyzer.html#analyzer_code_subset">analyzer_code_subset</a></span> <span class="kwd">with</span> (<span class="id">ep</span> := <span class="id">v</span>) (<span class="id">l</span> := <span class="id">l</span>) <span class="kwd">in</span> <span class="id">HA</span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemanticsAproof.html#exec_alu32_list_code_subset">exec_alu32_list_code_subset</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_one">star_one</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_jmp_always">exec_step_jmp_always</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_one">star_one</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_jmp_cond">exec_step_jmp_cond</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_one">star_one</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_internal_load">exec_step_internal_load</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_one">star_one</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_internal_store">exec_step_internal_store</a></span>; <span class="tactic">eauto</span>.<br/>
+&nbsp;&nbsp;- <span class="tactic">intros</span>; <span class="tactic">eapply</span> <span class="id"><a href="https://compcert.org/doc/html/compcert.common.Smallstep.html#star_one">star_one</a></span>; <span class="tactic">eapply</span> <span class="id"><a href="bpf.rbpf32.TSSemantics.html#exec_step_external">exec_step_external</a></span>; <span class="tactic">eauto</span>.<br/>
+Qed.</div>
+<br/>
+<span class="kwd">End</span> <span class="id"><a href="bpf.rbpf32.TSSemanticsAproof.html#JITBackwardSimulationProof">JITBackwardSimulationProof</a></span>.
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</a></div>
+</body>
+</html>
