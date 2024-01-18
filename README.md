@@ -7,7 +7,7 @@ This repo relies on several existing projects
 - Coq.8.13.2
 - Our CompCert ARM Variant, see `compcert-arm-bin.zip`
 - dx, from `https://gitlab.univ-lille.fr/samuel.hym/dx`
-- ...
+- CertrBPF, the folders except `jit` and `rbpf32` in this repo.
 
 see INSTALL.md for how to install them.
 
