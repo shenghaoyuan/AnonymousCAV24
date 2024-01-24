@@ -109,7 +109,7 @@ static __attribute__((always_inline)) inline void jit_call(struct havm_state* st
   // for user-defined, we swapped the order to make sure r0 is the start address of jitted_list while r1 is the start address of jit_state.
   unsigned int ofs;
   ofs = (*st).tp_kv[(*st).pc_loc].arm_ofs;
-  _magic_function(4*ofs, st);
+  _magic_function(ofs, st);
   (*st).pc_loc += (*st).tp_kv[(*st).pc_loc].alu32_ofs;
   return ;
 }

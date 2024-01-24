@@ -2,6 +2,7 @@ From compcert.lib Require Import Integers Coqlib.
 From compcert.common Require Import AST Values Memory.
 From compcert.arm Require Import ABinSem BinDecode.
 
+From bpf.comm Require Import JITCall.
 From bpf.rbpf32 Require Import JITConfig TSSyntax TSDecode Analyzer.
 From bpf.jit Require Import ListSetSort ThumbJIT WholeCompiler.
 
@@ -67,10 +68,13 @@ Fixpoint combiner_generic_aux (kl: list (nat * bpf_code)) (base: nat):
     match jit_alu32_generic l with
     | None => None
     | Some bl =>
-      match combiner_generic_aux tl (base + (List.length bl)) with
-      | None => None
-      | Some (kv, cl) => Some ((ep, base) :: kv, bl ++ cl)
-      end
+      if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
+        match combiner_generic_aux tl (base + (List.length bl)) with
+        | None => None
+        | Some (kv, cl) => Some ((ep, base) :: kv, bl ++ cl)
+        end
+      else
+        None
     end
   end.
 
@@ -120,13 +124,42 @@ Proof.
   destruct find_instr as [ ins |] eqn: Hfind; [| inversion Hunfold].
   destruct ins; try (eapply IHfuel; eauto).
   - destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Hunfold].
-    destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold].
+    destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold]. (*
+    destruct List.existsb eqn:He.
+    {
+      rewrite existsb_exists in He.
+      simpl in He.
+      destruct kl as [| khd ktl ] eqn: HKL; [auto |].
+      simpl in Hunfold.
+      simpl.
+      destruct khd as (ep & ep_l).
+      rewrite jit_alu32_generic_same.
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct combiner_aux eqn: Hcombiner; [| inversion Hunfold].
+      injection Hunfold as Heq1 Heq2.
+      specialize (IHfuel c (pc + Datatypes.length l1) base kv l).
+      subst kv.
+      subst l.
+      rewrite Haux in IHfuel.
+      simpl in IHfuel.
+      rewrite HBL in IHfuel.
+      rewrite Hcombiner in IHfuel.
+      assert (Heq: Some (concat_bin ((ep, (base, bl)) :: l0)) =
+         Some ((ep, base) :: fst (concat_bin l0), bl ++ snd (concat_bin l0))). {
+        f_equal.
+      }
+      specialize (IHfuel Heq).
+      rewrite jit_alu32_generic_same in IHfuel.
+      rewrite HBL in IHfuel.
+      auto.
+    } *)
+
     destruct kl as [| khd ktl ] eqn: HKL; [|].
     { simpl in Hunfold.
       simpl.
       rewrite jit_alu32_generic_same.
-      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-      destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
       simpl in Hunfold. auto.
     }
 
@@ -134,8 +167,8 @@ Proof.
     simpl in Hunfold.
     simpl.
     rewrite jit_alu32_generic_same.
-    destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-    destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
+    destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+    destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
 
     destruct combiner_aux as [cl |] eqn: HCL;[| inversion Hunfold].
     injection Hunfold as HKV_eq HL_eq.
@@ -154,23 +187,55 @@ Proof.
   - destruct find_instr as [ins_pc|] eqn: Hfind_pc in Hunfold; [| inversion Hunfold].
     rewrite Hfind_pc.
     destruct ins_pc; try (eapply IHfuel; eauto).
-      destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Hunfold].
-      destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold].
-      destruct kl as [| khd ktl ] eqn: HKL; [|].
-      { simpl in Hunfold.
-        simpl.
-        rewrite jit_alu32_generic_same.
-        destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-        destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
-        simpl in Hunfold. auto.
+    destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Hunfold].
+    destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold]. (*
+
+    destruct List.existsb eqn:He.
+    {
+      rewrite existsb_exists in He.
+      simpl in He.
+      destruct kl as [| khd ktl ] eqn: HKL; [auto |].
+      simpl in Hunfold.
+      simpl.
+      destruct khd as (ep & ep_l).
+      rewrite jit_alu32_generic_same.
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct combiner_aux eqn: Hcombiner; [| inversion Hunfold].
+      injection Hunfold as Heq1 Heq2.
+      specialize (IHfuel c (S pc) base kv l).
+      subst kv.
+      subst l.
+      rewrite Haux in IHfuel.
+      simpl in IHfuel.
+      rewrite HBL in IHfuel.
+      rewrite Hcombiner in IHfuel.
+      assert (Heq: Some (concat_bin ((ep, (base, bl)) :: l0)) =
+         Some ((ep, base) :: fst (concat_bin l0), bl ++ snd (concat_bin l0))). {
+        f_equal.
       }
+      specialize (IHfuel Heq).
+      rewrite jit_alu32_generic_same in IHfuel.
+      rewrite HBL in IHfuel.
+      auto.
+    } *)
+
+
+    destruct kl as [| khd ktl ] eqn: HKL; [|].
+    { simpl in Hunfold.
+      simpl.
+      rewrite jit_alu32_generic_same.
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
+      simpl in Hunfold. auto.
+    }
 
       rewrite <- HKL in *.
       simpl in Hunfold.
       simpl.
+
       rewrite jit_alu32_generic_same.
-      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-      destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
 
       destruct combiner_aux as [cl |] eqn: HCL;[| inversion Hunfold].
       injection Hunfold as HKV_eq HL_eq.
@@ -191,13 +256,43 @@ Proof.
     rewrite Hfind_pc.
     destruct ins_pc; try (eapply IHfuel; eauto).
       destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Hunfold].
-      destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold].
+      destruct analyzer_aux as [ kl | ] eqn: Haux; [| inversion Hunfold]. (*
+
+    destruct List.existsb eqn:He.
+    {
+      rewrite existsb_exists in He.
+      simpl in He.
+      destruct kl as [| khd ktl ] eqn: HKL; [auto |].
+      simpl in Hunfold.
+      simpl.
+      destruct khd as (ep & ep_l).
+      rewrite jit_alu32_generic_same.
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct combiner_aux eqn: Hcombiner; [| inversion Hunfold].
+      injection Hunfold as Heq1 Heq2.
+      specialize (IHfuel c (S pc) base kv l).
+      subst kv.
+      subst l.
+      rewrite Haux in IHfuel.
+      simpl in IHfuel.
+      rewrite HBL in IHfuel.
+      rewrite Hcombiner in IHfuel.
+      assert (Heq: Some (concat_bin ((ep, (base, bl)) :: l0)) =
+         Some ((ep, base) :: fst (concat_bin l0), bl ++ snd (concat_bin l0))). {
+        f_equal.
+      }
+      specialize (IHfuel Heq).
+      rewrite jit_alu32_generic_same in IHfuel.
+      rewrite HBL in IHfuel.
+      auto.
+    } *)
+
       destruct kl as [| khd ktl ] eqn: HKL; [|].
       { simpl in Hunfold.
         simpl.
         rewrite jit_alu32_generic_same.
-        destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-        destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
+        destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+        destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
         simpl in Hunfold. auto.
       }
 
@@ -205,8 +300,8 @@ Proof.
       simpl in Hunfold.
       simpl.
       rewrite jit_alu32_generic_same.
-      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold]. (*
-      destruct (_ <=? _) eqn: Hcond; [| inversion Hunfold]. *)
+      destruct jit_alu32 as [bl|] eqn: HBL; [| inversion Hunfold].
+      destruct (_ <? _) eqn: Hcond; [| inversion Hunfold].
 
       destruct combiner_aux as [cl |] eqn: HCL;[| inversion Hunfold].
       injection Hunfold as HKV_eq HL_eq.

@@ -27,7 +27,7 @@ static __attribute__((always_inline)) inline unsigned int eval_arm_ofs(struct ji
 
 static __attribute__((always_inline)) inline void add_key_value(struct jit_state* st, unsigned int pc, unsigned int ofs0, unsigned int ofs1){
   (*st).tp_kv[pc].arm_ofs = ofs0;
-  (*st).tp_kv[pc].alu32_ofs = ofs1;
+  (*st).tp_kv[pc].alu32_ofs = ofs1-1;
   return ;
 }
 
@@ -343,6 +343,7 @@ static __attribute__((always_inline)) inline void mov_int_to_movwt(struct jit_st
   unsigned int movw_hi_0;
   unsigned int movw_hi;
   unsigned int ins32;
+  load_IR11(st);
   lo_imm8 = decode_thumb(i, 0U, 8U);
   lo_imm3 = decode_thumb(i, 8U, 3U);
   lo_i = decode_thumb(i, 11U, 1U);
@@ -377,7 +378,6 @@ static __attribute__((always_inline)) inline void bpf_alu32_to_thumb_imm_comm(st
       bpf_alu32_to_thumb_reg(st, alu_op, dst, 11);
       return;
     } else {
-      load_IR11(st);
       mov_int_to_movwt(st, hi_32, 11, 62144);
       bpf_alu32_to_thumb_reg(st, alu_op, dst, 11);
       return;
@@ -427,7 +427,6 @@ static __attribute__((always_inline)) inline void bpf_alu32_to_thumb_imm(struct 
         bpf_alu32_to_thumb_reg(st, 44U, dst, 11);
         return;
       } else {
-        load_IR11(st);
         mov_int_to_movwt(st, hi_32, 11, 62144);
         bpf_alu32_to_thumb_reg(st, 44U, dst, 11);
         return;
@@ -447,7 +446,6 @@ static __attribute__((always_inline)) inline void bpf_alu32_to_thumb_imm(struct 
           add_jited_bin(st, ins32);
           return;
         } else {
-          load_IR11(st);
           mov_int_to_movwt(st, hi_32, 11, 62144);
           add_jited_bin(st, ins32);
           return;
@@ -476,7 +474,6 @@ static __attribute__((always_inline)) inline void bpf_alu32_to_thumb_imm(struct 
         add_jited_bin(st, ins32);
         return;
       } else {
-        load_IR11(st);
         mov_int_to_movwt(st, hi_32, 11, 62144);
         add_jited_bin(st, ins32);
         return;
@@ -491,7 +488,6 @@ static __attribute__((always_inline)) inline void bpf_alu32_to_thumb_imm(struct 
       if (lo_32 == imm32) {
         return;
       } else {
-        load_IR11(st);
         mov_int_to_movwt(st, hi_32, dst, 62144);
         return;
       }

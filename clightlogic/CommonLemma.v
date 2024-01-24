@@ -616,16 +616,16 @@ Qed. *)
 
 Lemma Ptrofs_unsigned_repr_id_of_reg:
   forall r,
-  Ptrofs.unsigned (Ptrofs.repr (8 * id_of_reg r)) = 8 * id_of_reg r.
+  Ptrofs.unsigned (Ptrofs.repr (4 * id_of_reg r)) = 4 * id_of_reg r.
 Proof.
   intros.
   unfold id_of_reg; destruct r;
   rewrite Ptrofs.unsigned_repr; try rewrite Ptrofs_max_unsigned_eq32; try lia.
 Qed.
 
-Lemma Ptrofs_unsigned_repr_id_of_reg_8:
+Lemma Ptrofs_unsigned_repr_id_of_reg_4:
   forall r,
-  0 <= (8 + 8 * id_of_reg r) <= Ptrofs.max_unsigned.
+  0 <= (4 * id_of_reg r) <= Ptrofs.max_unsigned.
 Proof.
   intros.
   unfold id_of_reg; destruct r;
@@ -635,8 +635,8 @@ Qed.
 Lemma Hreg_eq: 
   forall r, (Ptrofs.unsigned
               (Ptrofs.repr
-                 (Ptrofs.unsigned (Ptrofs.repr 8) +
-                  Ptrofs.unsigned (Ptrofs.repr (8 * id_of_reg r))))) = (8 + 8 * id_of_reg r)%Z.
+                 (Ptrofs.unsigned (Ptrofs.repr 0) +
+                  Ptrofs.unsigned (Ptrofs.repr (4 * id_of_reg r))))) = (4 * id_of_reg r)%Z.
 Proof.
   intros.
   repeat rewrite Ptrofs.unsigned_repr; try (rewrite Ptrofs_max_unsigned_eq32; unfold id_of_reg; destruct r; lia).

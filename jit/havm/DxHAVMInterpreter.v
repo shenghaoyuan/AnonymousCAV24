@@ -11,14 +11,6 @@ From bpf.jit.havm Require Import HAVMMonadOp.
 Open Scope Z_scope.
 Open Scope monad_scope.
 
-Definition get_dst (ins: int64): M reg := int64_to_dst_reg ins.
-
-Definition get_src (ins: int64): M reg := int64_to_src_reg ins.
-
-Definition get_offset (ins: int64):M sint32_t := returnM (get_offset ins).
-
-Definition get_immediate (ins: int64):M sint32_t := returnM (get_immediate ins).
-
 Definition get_src32 (x: nat8) (ins: int64): M valu32_t := 
   if Int.eq Int.zero (Int.and (nat8_to_int x) int32_8) then
     do imm    <-- get_immediate ins;

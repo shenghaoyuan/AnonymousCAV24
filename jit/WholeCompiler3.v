@@ -2,6 +2,7 @@ From compcert.lib Require Import Integers Coqlib.
 From compcert.common Require Import AST Values Memory.
 From compcert.arm Require Import ABinSem BinDecode.
 
+From bpf.comm Require Import JITCall.
 From bpf.rbpf32 Require Import JITConfig TSSyntax TSDecode Analyzer.
 From bpf.jit Require Import ThumbJIT WholeCompiler WholeCompilerGeneric WholeCompiler1.
 From bpf.jit Require Import WholeCompiler2 ThumbJIT1 ListSetRefinement ThumbJIT1proof ListSetSort.
@@ -72,10 +73,17 @@ Fixpoint whole_compiler3_aux (c: code) (fuel pc base: nat):
         match compose_jit_list_refine c (List.length c - pc) pc with
         | None => None
         | Some (bl, len) =>
-          match whole_compiler3_aux c n (pc + len) (base + (List.length bl)) with
-          | None => None
-          | Some (kv, l) => Some ((pc, base) :: kv, bl ++ l)
-          end
+          if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
+            match whole_compiler3_aux c n (pc + len) (base + (List.length bl)) with
+            | None => None
+            | Some (kv, l) => Some ((pc, base) :: kv, bl ++ l) (*
+              if (List.existsb (fun x => Nat.eqb (fst x) pc) kv) then
+                Some (kv, l)
+              else
+                Some ((pc, base) :: kv, bl ++ l) *)
+            end
+          else
+            None
         end
 
       | Pjmp ofs | Pjmpcmp _ _ _ ofs => (**r check if ins is jump *)
@@ -89,10 +97,17 @@ Fixpoint whole_compiler3_aux (c: code) (fuel pc base: nat):
               match compose_jit_list_refine c (List.length c - lbl) lbl with
               | None => None
               | Some (bl, _) =>
-                match whole_compiler3_aux c n (S pc) (base + (List.length bl)) with
-                | None => None
-                | Some (kv, l) => Some ((lbl, base) :: kv, bl ++ l)
-                end
+                if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
+                  match whole_compiler3_aux c n (S pc) (base + (List.length bl)) with
+                  | None => None
+                  | Some (kv, l) => Some ((lbl, base) :: kv, bl ++ l) (*
+                    if (List.existsb (fun x => Nat.eqb (fst x) lbl) kv) then
+                      Some (kv, l)
+                    else
+                      Some ((lbl, base) :: kv, bl ++ l) *)
+                  end
+                else
+                  None
               end
             | _ => whole_compiler3_aux c n (S pc) base
             end
@@ -192,6 +207,7 @@ Proof.
   destruct ins; try (eapply IHfuel; eauto; lia).
   - destruct compose_jit_list as [(l1 & len )|] eqn: HL1; [| inversion Haux].
     erewrite compose_jit_list_refine_eq; eauto.
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
 
     destruct whole_compiler2_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto.
@@ -202,6 +218,7 @@ Proof.
 
     destruct compose_jit_list as [(l1 & len )|] eqn: HL1; [| inversion Haux].
     erewrite compose_jit_list_refine_eq; eauto.
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
 
     destruct whole_compiler2_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto.
@@ -212,6 +229,7 @@ Proof.
 
     destruct compose_jit_list as [(l1 & len )|] eqn: HL1; [| inversion Haux].
     erewrite compose_jit_list_refine_eq; eauto.
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
 
     destruct whole_compiler2_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto.

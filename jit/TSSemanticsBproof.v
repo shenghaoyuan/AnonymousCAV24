@@ -963,7 +963,7 @@ Proof.
     apply nth_error_In in Hnth as Hin.
     specialize (HLK_INV _ _ Hin).
 
-    destruct Heq as (ofs & l1 & HIN & HOFS & HJIT).
+    destruct Heq as (ofs & l1 & HIN & HOFS & HJIT & HMAX).
     eapply star_one; eapply bexec_step_alu32
       with (v := v) (n := n) (ofs := ofs) (l := l1); auto.
     + eapply Hfind.

@@ -10,42 +10,6 @@ From bpf.rbpf32 Require Import TSSyntax TSDecode BState.
 Open Scope Z_scope.
 Import ListNotations.
 
-(*
-Definition eval_src (s:reg+imm) (rs: regmap): val :=
-  match s with
-  | inl r => eval_regmap r rs
-  | inr i => sint32_to_vint i
-  end.
-
-Definition step_branch_cond (c: cond) (d: reg) (s: reg+imm) (rs: regmap): bool :=
-  let dst := eval_regmap d rs in
-  let src := eval_src s rs in
-    match c with
-    | Eq  => comp_eq   dst src
-    | SEt => compu_set dst src
-    | Ne  => comp_ne   dst src
-    | Gt sign => 
-      match sign with
-      | Unsigned => compu_gt dst src
-      | Signed   => comp_gt  dst src
-      end
-    | Ge sign =>
-      match sign with
-      | Unsigned => compu_ge dst src
-      | Signed   => comp_ge  dst src
-      end
-    | Lt sign => 
-      match sign with
-      | Unsigned => compu_lt dst src
-      | Signed   => comp_lt  dst src
-      end
-    | Le sign => 
-      match sign with
-      | Unsigned => compu_le dst src
-      | Signed   => comp_le  dst src
-      end
-    end. *)
-
 Definition check_mem_aux2 (mr: memory_region) (perm: permission) (addr: val) (chunk: memory_chunk): val :=
   let lo_ofs := Val.sub addr (start_addr mr) in
   let hi_ofs := Val.add lo_ofs (memory_chunk_to_valu32 chunk) in
@@ -57,15 +21,6 @@ Definition check_mem_aux2 (mr: memory_region) (perm: permission) (addr: val) (ch
       Val.add (block_ptr mr) lo_ofs
     else
       Vnullptr.
-
-Definition get_mem_region (n mrs_num: nat) (mrs: MyMemRegionsType): option memory_region :=
-  if (Nat.ltb n mrs_num) then
-    match List.nth_error mrs n with
-    | Some mr => Some mr
-    | None => None
-    end
-  else
-    None.
 
 (**r could be may abstract *)
 Fixpoint check_mem_aux (num mrs_num: nat) (perm: permission) (chunk: memory_chunk) (addr: val) (mrs: MyMemRegionsType) (m: mem) {struct num}: option val :=
@@ -190,8 +145,6 @@ Definition eval_ins (rs: regset) (l: list int64) (len: nat): option int64 :=
   | _ => None
   end.
 
-
-
 (**r the lemma has been proven in CertrBPF: /CAV22-AE/isolation/CheckMem.v
   mem_inv_check_mem_valid_pointer
   Here we skip the proof.
@@ -204,9 +157,6 @@ Axiom check_mem_prop:
           || Mem.valid_pointer m b (Ptrofs.unsigned ofs - 1) = true)%bool /\
         Mem.valid_block m b)
         \/ ptr = Vnullptr.
-
-
-Axiom _bpf_get_call : ident -> signature -> mem -> option (val * mem).
 
 Definition step (l: list int64) (kv: list nat) (len: nat) (rs: regset) (mrs_num: nat) (mrs: MyMemRegionsType) (m: mem):
   option (regset * mem * bpf_flag) :=
@@ -238,7 +188,7 @@ Definition step (l: list int64) (kv: list nat) (len: nat) (rs: regset) (mrs_num:
       | Pjmp ofs => Some (rs#BPC <- (Val.add (Val.add rs#BPC (Vint ofs)) Vone), m, BPF_OK)
 
       | Pjmpcmp op d s ofs =>
-        match eval_cmp op rs m d s with
+        match TSSyntax.eval_cmp op rs m d s with
         | None => None
         | Some b =>
           if b then

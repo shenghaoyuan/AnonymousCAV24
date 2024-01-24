@@ -2,6 +2,7 @@ From compcert.lib Require Import Integers Coqlib.
 From compcert.common Require Import AST Values Memory.
 From compcert.arm Require Import ABinSem BinDecode.
 
+From bpf.comm Require Import JITCall.
 From bpf.rbpf32 Require Import JITConfig TSSyntax TSDecode Analyzer.
 From bpf.jit Require Import ThumbJIT WholeCompiler WholeCompilerGeneric WholeCompiler1 ListSetSort.
 
@@ -73,10 +74,17 @@ Fixpoint whole_compiler2_aux (c: code) (fuel pc base: nat):
         match compose_jit_list c (List.length c - pc) pc with
         | None => None
         | Some (bl, len) =>
-          match whole_compiler2_aux c n (pc + len) (base + (List.length bl)) with
-          | None => None
-          | Some (kv, l) => Some ((pc, base) :: kv, bl ++ l)
-          end
+          if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
+            match whole_compiler2_aux c n (pc + len) (base + (List.length bl)) with
+            | None => None
+            | Some (kv, l) => Some ((pc, base) :: kv, bl ++ l) (*
+              if (List.existsb (fun x => Nat.eqb (fst x) pc) kv) then
+                Some (kv, l)
+              else
+                Some ((pc, base) :: kv, bl ++ l) *)
+            end
+          else
+            None
         end
 
       | Pjmp ofs | Pjmpcmp _ _ _ ofs => (**r check if ins is jump *)
@@ -90,10 +98,17 @@ Fixpoint whole_compiler2_aux (c: code) (fuel pc base: nat):
               match compose_jit_list c (List.length c - lbl) lbl with
               | None => None
               | Some (bl, _) =>
-                match whole_compiler2_aux c n (S pc) (base + (List.length bl)) with
-                | None => None
-                | Some (kv, l) => Some ((lbl, base) :: kv, bl ++ l)
-                end
+                if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
+                  match whole_compiler2_aux c n (S pc) (base + (List.length bl)) with
+                  | None => None
+                  | Some (kv, l) => Some ((lbl, base) :: kv, bl ++ l) (*
+                    if (List.existsb (fun x => Nat.eqb (fst x) lbl) kv) then
+                      Some (kv, l)
+                    else
+                      Some ((lbl, base) :: kv, bl ++ l) *)
+                  end
+                else
+                  None
               end
             | _ => whole_compiler2_aux c n (S pc) base
             end
@@ -188,6 +203,7 @@ Proof.
   destruct ins; try (eapply IHfuel; eauto; lia).
   - destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Haux].
     destruct jit_alu32_generic as [ bl | ] eqn: Hg; [| inversion Haux].
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
     assert (Hle: pc < List.length c). {
       clear - Hfind.
       unfold find_instr in Hfind.
@@ -202,6 +218,7 @@ Proof.
     2:{ lia. }
     rewrite HL1.
 
+    rewrite HMAX.
     destruct whole_compiler1_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto. lia.
 
@@ -211,6 +228,7 @@ Proof.
 
     destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Haux].
     destruct jit_alu32_generic as [ bl | ] eqn: Hg; [| inversion Haux].
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
     remember (Z.to_nat (Int.signed (Int.add Int.one (Int.add (Int.repr (Z.of_nat pc)) o)))) as ofs eqn: Hofs.
     assert (Hle: ofs < List.length c). {
       clear - Hofs Hfind1.
@@ -226,6 +244,7 @@ Proof.
     2:{ lia. }
     rewrite HL1.
 
+    rewrite HMAX.
     destruct whole_compiler1_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto. lia.
 
@@ -235,6 +254,7 @@ Proof.
 
     destruct get_alu32_list as [l1|] eqn: HL1; [| inversion Haux].
     destruct jit_alu32_generic as [ bl | ] eqn: Hg; [| inversion Haux].
+    destruct (_ <? _) eqn: HMAX; [| inversion Haux].
     remember (Z.to_nat (Int.signed (Int.add Int.one (Int.add (Int.repr (Z.of_nat pc)) o)))) as ofs eqn: Hofs.
     assert (Hle: ofs < List.length c). {
       clear - Hofs Hfind1.
@@ -250,6 +270,7 @@ Proof.
     2:{ lia. }
     rewrite HL1.
 
+    rewrite HMAX.
     destruct whole_compiler1_aux as [(kvk, lk)|] eqn: Hauxk in Haux;[| inversion Haux].
     erewrite IHfuel; eauto. lia.
 Qed.

@@ -297,7 +297,6 @@ Inductive instruction : Type :=
   | Pcall : ident -> signature -> instruction                   (**r function call *)
   | Pret : instruction.                                         (**r function return *)
 
-
 Declare Scope bpf_asm.
 Definition code := list int64.
 Definition bpf_code := list instruction.

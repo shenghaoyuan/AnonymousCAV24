@@ -38,6 +38,7 @@ all:
 	@$(MAKE) comm
 	@$(MAKE) dxcomm
 	@$(MAKE) monadicmodel
+	@$(MAKE) clightlogic
 	@$(MAKE) compcertinfo
 	@$(MAKE) compile
 	@$(MAKE) rbpf32
@@ -46,6 +47,7 @@ all:
 	@$(MAKE) dxhavm
 	@$(MAKE) havm-clight
 	@$(MAKE) jit
+	@$(MAKE) simulation
 	@$(MAKE) document
    
 COMM= Flag.v LemmaNat.v LemmaInt.v ListAsArray.v rBPFNat.v rBPFAST.v rBPFMemType.v rBPFValues.v MemRegion.v Regs.v BinrBPF.v \
@@ -67,7 +69,7 @@ CLIGHTLOGIC= clight_exec.v Clightlogic.v \
 
 MODELTS= TSSyntax.v JITConfig.v TSPrint.v TSDecode.v TSSemantics.v \
     TSSemanticsA.v Analyzer.v TSSemanticsAproof.v \
-    TSSemanticsJIT.v BState.v BSemanticsSimpl.v
+    TSSemanticsJIT.v BState.v BSemanticsSimpl.v BStateMonadOp.v BSemanticsMonadic.v BSemanticsSimplproof.v
 
 DXJIT= ../ListSetRefinement.v ../ThumbInsOp.v ../KeyValue2.v \
     JITState.v JITMonadOp.v JITIdDef.v DxKeyValue2.v \
@@ -88,12 +90,27 @@ JIT= PrintThumb.v ABMemory.v BitfieldLemma.v \
     TSSemanticsBproof.v \
     PrintJIT.v \
     WholeCompilerGeneric.v WholeCompiler1.v WholeCompiler2.v \
-    ThumbJIT1.v ThumbJIT1proof.v WholeCompiler3.v \
+    ThumbJIT1.v ThumbJIT2.v ThumbJIT1proof.v WholeCompiler3.v WholeCompiler4.v \
     TSSemanticsBequiv.v
 
 #TSSemanticsBproof0.v TSSemanticsBproof1.v TSSemanticsBproof2.v TSSemanticsBproof3.v TSSemanticsBproof4.v TSSemanticsBproof5.v TSSemanticsBproof6.v TSSemanticsBproof7.v TSSemanticsBproof8.v TSSemanticsBproof9.v TSSemanticsBproof10.v TSSemanticsBproof11.v TSSemanticsBproof12.v TSSemanticsBproof13.v TSSemanticsBproof14.v TSSemanticsBproof15.v TSSemanticsBproof16.v TSSemanticsBproof17.v \
 #TSSemanticsBproofAux.v TSSemanticsBproof6.v \
 
+SIMULATION= MatchStateComm.v HAVMMatchState.v InterpreterRel.v \
+    correct_check_pc.v correct_upd_pc.v correct_check_pc_incr.v correct_eval_reg.v correct_upd_reg.v correct_eval_flag.v correct_upd_flag.v \
+    correct_eval_mrs_num.v correct_eval_mrs_regions.v correct_load_mem.v correct_store_mem.v \
+    correct_eval_ins.v correct_cmp_ptr32_nullM.v correct_get_dst.v correct_get_src.v correct_get_mem_region.v \
+    correct__bpf_get_call.v correct_exec_function.v  \
+    correct_get_offset.v #correct_get_immediate.v correct_get_src32.v \
+    #correct_get_opcode_ins.v correct_get_opcode_alu32.v correct_get_opcode_branch.v \
+    #correct_get_opcode_mem_ld_reg.v correct_get_opcode_mem_st_imm.v correct_get_opcode_mem_st_reg.v correct_get_opcode_nat.v \
+    #correct_get_add.v correct_get_sub.v correct_get_addr_ofs.v correct_get_start_addr.v correct_get_block_size.v correct_get_block_perm.v \
+    #correct_check_mem_aux2.v correct_check_mem_aux.v correct_check_mem.v \
+    #correct_step_opcode_alu32.v correct_step_opcode_branch.v \
+    #correct_step_opcode_mem_ld_reg.v correct_step_opcode_mem_st_reg.v correct_step_opcode_mem_st_imm.v \
+    #correct_step.v correct_bpf_interpreter_aux.v correct_bpf_interpreter.v
+
+# correct_jit_call.v
 COQCOMM = $(addprefix comm/, $(COMM))
 COQDXCOMM = $(addprefix dxcomm/, $(DXCOMM))
 COQMODEL =  $(addprefix model/, $(MODEL))
@@ -104,6 +121,7 @@ COQDXJIT = $(addprefix jit/jitcompiler/, $(DXJIT))
 COQDXHAVM = $(addprefix jit/havm/, $(DXHAVM))
 COQJIT = $(addprefix jit/, $(JIT))
 CLIGHTLOGICDIR =  $(addprefix clightlogic/, $(CLIGHTLOGIC))
+COQSIMULATION = $(addprefix jit/simulation/, $(SIMULATION))
 
 FILES= $(COQCOMM) $(COQDXCOMM) $(COQMODEL) $(COQJIT) $(COQDXMODEL) $(COQEMONADIC) $(CLIGHTLOGICDIR)
 
@@ -208,8 +226,8 @@ dxhavm:
 	&& $(CC) -o repatch1 ../../../repatch/repatch1.c && ./repatch1 havm_generated.c generated_repatch1.c && rm havm_generated.c repatch1 \
 	&& $(CC) -o repatch2 repatch2.c && ./repatch2 generated_repatch1.c generated_repatch2.c && rm generated_repatch1.c repatch2 \
 	&& $(CC) -o repatch3 ../../../repatch/repatch3.c && ./repatch3 generated_repatch2.c generated_repatch3.c && rm generated_repatch2.c repatch3 \
-	&& $(CC) -o repatch4 ../../../repatch/repatch4.c && ./repatch4 havm_interpreter_pre.c generated_repatch3.c havm_interpreter.c && rm generated_repatch3.c repatch4
-	$(MV) jit/havm/repatch/havm_interpreter.c jit/jitclight
+	&& $(CC) -o repatch4 ../../../repatch/repatch4.c && ./repatch4 havm_interpreter_pre.c generated_repatch3.c havm_interpreter_ef.c && ./repatch4 havm_interpreter_pre_builtin.c generated_repatch3.c havm_interpreter.c && rm generated_repatch3.c repatch4
+	$(MV) jit/havm/repatch/havm_interpreter.c jit/jitclight && $(MV) jit/havm/repatch/havm_interpreter_ef.c jit/jitclight
 
 havm-clight:
 	@echo $@
@@ -222,6 +240,11 @@ havm-clight:
 jit:
 	@echo $@
 	$(COQMAKEFILE) -f _CoqProject $(COQJIT) $(COQEXTRAFLAGS)  -o CoqMakefile
+	make -f CoqMakefile
+
+simulation:
+	@echo $@
+	$(COQMAKEFILE) -f _CoqProject $(COQSIMULATION) $(COQEXTRAFLAGS)  -o CoqMakefile
 	make -f CoqMakefile
 
 DOCFLAG := -external https://compcert.org/doc/html compcert -base bpf -short-names 
@@ -260,4 +283,4 @@ clean :
 
 .SECONDARY:
 
-.PHONY: all comm dxcomm model monadicmodel compcertinfo compile rbpf32 dxjit jit-clight dxhavm havm-clight jit clightlogic document CoqProject addheadache clean
+.PHONY: all comm dxcomm model monadicmodel compcertinfo compile rbpf32 dxjit jit-clight dxhavm havm-clight jit clightlogic simulation document CoqProject addheadache clean

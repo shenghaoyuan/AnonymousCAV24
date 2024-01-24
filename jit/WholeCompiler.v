@@ -2,6 +2,7 @@ From compcert.lib Require Import Integers Coqlib.
 From compcert.common Require Import AST Values Memory.
 From compcert.arm Require Import ABinSem BinDecode.
 
+From bpf.comm Require Import JITCall.
 From bpf.rbpf32 Require Import JITConfig TSSyntax TSDecode Analyzer.
 From bpf.jit Require Import ThumbJIT.
 
@@ -17,15 +18,15 @@ Fixpoint combiner_aux (kl: list (nat * bpf_code)) (base: nat): option (list (nat
   | (ep, l) :: tl =>
     match jit_alu32 l with
     | None => None
-    | Some bl => (*
-      if Nat.leb (base + (4 * List.length bl)) JITTED_LIST_MAX_LENGTH then *)
+    | Some bl =>
+      if Nat.ltb (base + List.length bl) JITTED_LIST_MAX_LENGTH then
         match combiner_aux tl (base + List.length bl) with
           (**r 4 * because of size_chunk Mint32 *)
         | None => None
         | Some cl =>  Some ((ep, (base, bl)) :: cl)
-        end (*
+        end
       else
-        None *)
+        None
     end
   end.
 
@@ -179,8 +180,9 @@ Lemma combiner_aux_nth_error:
     exists ofs l1,
       List.nth_error bl n = Some (ep, (ofs, l1)) /\
       compute_bin_ofs bl n ofs base = true /\
-      jit_alu32 l = Some l1 (* /\
-      List.length l1 <= JITTED_LIST_MAX_LENGTH *).
+      jit_alu32 l = Some l1 /\
+      List.length l1 < JITTED_LIST_MAX_LENGTH /\
+      ((Z.of_nat (ofs + Datatypes.length l1) * 4) < Int.max_unsigned)%Z.
 Proof.
   induction kl; simpl; intros.
   - injection HC as Heq; subst bl.
@@ -189,22 +191,27 @@ Proof.
   - destruct n.
     + simpl in IN.
       injection IN as Heq; subst a.
-      destruct jit_alu32 as [bl1 | ] eqn: HJIT; [| inversion HC]. (*
-      destruct ( _ <=? _) eqn: HLE; [| inversion HC]. *)
+      destruct jit_alu32 as [bl1 | ] eqn: HJIT; [| inversion HC].
+      destruct ( _ <? _) eqn: HLE; [| inversion HC].
       destruct combiner_aux as [cl | ] eqn: Haux; [| inversion HC].
       injection HC as Heq.
       exists base, bl1.
       rewrite <- Heq.
       simpl.
-      rewrite Nat.eqb_refl. (*
-      rewrite Nat.leb_le in HLE. *)
+      rewrite Nat.eqb_refl.
+      rewrite Nat.ltb_lt in HLE.
       split; [auto| ].
       split; auto.
+      split; auto.
+      split; [lia |].
+      unfold JITTED_LIST_MAX_LENGTH in HLE.
+      change Int.max_unsigned with 4294967295%Z.
+      lia.
 
     + simpl in IN.
       destruct a.
-      destruct jit_alu32 as [bl1 | ] eqn: HJIT; [| inversion HC]. (*
-      destruct ( _ <=? _) eqn: HLE; [| inversion HC]. *)
+      destruct jit_alu32 as [bl1 | ] eqn: HJIT; [| inversion HC].
+      destruct ( _ <? _) eqn: HLE; [| inversion HC].
       destruct combiner_aux as [cl | ] eqn: Haux; [| inversion HC].
       injection HC as Heq.
       eapply IHkl in Haux; eauto.
@@ -221,14 +228,42 @@ Lemma combiner_nth_error:
     exists ofs l1,
       List.nth_error bl n = Some (ep, (ofs, l1)) /\
       compute_bin_ofs bl n ofs 0 = true /\
-      jit_alu32 l = Some l1 (*/\
-      List.length l1 <= JITTED_LIST_MAX_LENGTH *).
+      jit_alu32 l = Some l1 /\
+      List.length l1 < JITTED_LIST_MAX_LENGTH /\
+      ((Z.of_nat (ofs + Datatypes.length l1) * 4) < Int.max_unsigned)%Z.
 Proof.
   unfold combiner.
   intros.
   eapply combiner_aux_nth_error; eauto.
 Qed.
 
+Lemma nth_error_combiner:
+  forall kl bl n v ofs l base
+  (Hnth : nth_error bl n = Some (v, (ofs, l)))
+  (Hcombiner : combiner_aux kl base = Some bl),
+    exists l1,
+    List.nth_error kl n = Some (v, l1).
+Proof. 
+  induction kl; simpl; intros.
+  { inversion Hcombiner; subst.
+    destruct n; simpl in Hnth; inversion Hnth.
+  }
+
+  destruct a as (ep1 & l1).
+  destruct jit_alu32 as [bl1 | ] eqn: Halu32; [| inversion Hcombiner].
+  destruct (_ <? _) eqn: HMAX; [| inversion Hcombiner].
+  destruct combiner_aux as [cl1 |] eqn: Haux; inversion Hcombiner; subst.
+  destruct n.
+  { simpl in Hnth.
+    inversion Hnth; subst.
+    simpl.
+    eexists; reflexivity.
+  }
+
+  simpl in Hnth.
+  simpl.
+  eapply IHkl; eauto.
+Qed.
 
 Lemma code_subset_in_blk_in:
   forall bl ofs jit_blk m n ep ofs1 l1 kv nbl

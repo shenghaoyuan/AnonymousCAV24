@@ -74,7 +74,6 @@ Definition ___compcert_va_float64 : ident := $"__compcert_va_float64".
 Definition ___compcert_va_int32 : ident := $"__compcert_va_int32".
 Definition ___compcert_va_int64 : ident := $"__compcert_va_int64".
 Definition __bpf_get_call : ident := $"_bpf_get_call".
-Definition __magic_function : ident := $"_magic_function".
 Definition _addr : ident := $"addr".
 Definition _addr_ptr : ident := $"addr_ptr".
 Definition _alu32_ofs : ident := $"alu32_ofs".
@@ -500,13 +499,17 @@ Definition f_jit_call := {|
           (tptr (Tstruct _key_value2 noattr))) (Tstruct _key_value2 noattr))
       _arm_ofs tuint))
   (Ssequence
-    (Scall None
-      (Evar __magic_function (Tfunction
-                               (Tcons tuint
-                                 (Tcons (tptr (Tstruct _havm_state noattr))
-                                   Tnil)) tvoid cc_default))
-      ((Ebinop Omul (Econst_int (Int.repr 4) tint) (Etempvar _ofs tuint)
-         tuint) :: (Etempvar _st (tptr (Tstruct _havm_state noattr))) :: nil))
+    (Sbuiltin None
+      (EF_exec_binary 4000 (mksignature (AST.Tint :: AST.Tint :: nil)
+                             AST.Tint
+                             {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}) 52 (Ptrofs.repr 0))
+      (Tcons (tptr tuint) (Tcons (tptr (Tstruct _havm_state noattr)) Tnil))
+      ((Ebinop Oadd
+         (Efield
+           (Ederef (Etempvar _st (tptr (Tstruct _havm_state noattr)))
+             (Tstruct _havm_state noattr)) _tp_bin (tptr tuint))
+         (Etempvar _ofs tuint) (tptr tuint)) ::
+       (Etempvar _st (tptr (Tstruct _havm_state noattr))) :: nil))
     (Ssequence
       (Sassign
         (Efield
@@ -2524,12 +2527,7 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
- (__magic_function,
-   Gfun(External (EF_external "_magic_function"
-                   (mksignature (AST.Tint :: AST.Tint :: nil) AST.Tvoid
-                     cc_default))
-     (Tcons tuint (Tcons (tptr (Tstruct _havm_state noattr)) Tnil)) tvoid
-     cc_default)) :: (_check_pc, Gfun(Internal f_check_pc)) ::
+ (_check_pc, Gfun(Internal f_check_pc)) ::
  (_check_pc_incr, Gfun(Internal f_check_pc_incr)) ::
  (_upd_pc, Gfun(Internal f_upd_pc)) ::
  (_eval_reg, Gfun(Internal f_eval_reg)) ::
@@ -2575,8 +2573,8 @@ Definition global_definitions : list (ident * globdef fundef type) :=
  (_havm_interpreter, Gfun(Internal f_havm_interpreter)) :: nil).
 
 Definition public_idents : list ident :=
-(_havm_interpreter :: _check_mem :: __magic_function :: ___builtin_debug ::
- ___builtin_execbin :: ___builtin_isb :: ___builtin_dsb :: ___builtin_dmb ::
+(_havm_interpreter :: _check_mem :: ___builtin_debug :: ___builtin_execbin ::
+ ___builtin_isb :: ___builtin_dsb :: ___builtin_dmb ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
  ___builtin_expect :: ___builtin_unreachable :: ___builtin_va_end ::

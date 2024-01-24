@@ -15,42 +15,49 @@ Import ListNotations.
 Definition memory_region_mapping (mrs: list memory_region) (m: mem) (p: permission) (ck: memory_chunk) (addr: val) (b: block) (ofs: ptrofs): Prop :=
   check_mem p ck addr (List.length mrs) mrs m = Some (Vptr b ofs).
 
-Fixpoint kv_flatten_aux (kv: list (nat * nat)) (l: list nat): list nat :=
+Fixpoint kv_flatten_aux (kv: list (nat * nat)) (l: list nat): option (list nat) :=
   match kv with
-  | [] => l
+  | [] => Some l
   | (k, v) :: tl =>
     match ListNat.assign l k v with
-    | None => []
+    | None => None
     | Some l' => kv_flatten_aux tl l'
     end
   end.
 
-Definition kv_flatten (kv: list (nat * nat)) (len: nat): list nat :=
+Definition kv_flatten (kv: list (nat * nat)) (len: nat): option (list nat) :=
   kv_flatten_aux kv (ListNat.create_int_list len).
 
-(*
-Lemma kv_flatten_aux_property:
-  forall bl kv l v ofs l0 lk
+
+Axiom kv_flatten_aux_property:
+  forall bl kv l v ofs l0 lk sl
   (Hnth : List.In (v, (ofs, l0)) bl)
-  (Hconcat : concat_bin bl = (kv, l)),
-    ListNat.index (kv_flatten_aux kv lk)
-        (Z.to_nat (Int.unsigned (Int.repr (Z.of_nat v)))) = Some ofs.
+  (Hconcat : concat_bin bl = (kv, l))
+  (HKV: kv_flatten_aux kv lk = Some sl),
+    ListNat.index sl v = Some ofs. (*
 Proof.
-  induction ../..
-  (**r this is a property of kv_flatten_aux, do it later *)
-Admitted. *)
+  induction bl; simpl; intros.
+  { inversion Hnth. }
+
+  destruct Hnth as [Heq| Hnth].
+  { subst a.
+    inversion Hconcat; subst. clear Hconcat.
+    simpl in HKV.
+    (**r we need NoDup info of KV elements *)
+  }
+Qed. *)
 
 Lemma kv_flatten_property:
-  forall c kl bl kv l n v ofs l0
+  forall bl kv l n v ofs l0 sl len
   (Hnth : nth_error bl n = Some (v, (ofs, l0)))
-  (Hanalyzer : analyzer c = Some kl)
-  (Hcombiner : combiner kl = Some bl)
-  (Hconcat : concat_bin bl = (kv, l)),
-    ListNat.index (kv_flatten kv (Datatypes.length c))
-        (Z.to_nat (Int.unsigned (Int.repr (Z.of_nat v)))) = Some ofs.
+  (Hconcat : concat_bin bl = (kv, l))
+  (HKV: kv_flatten kv len = Some sl),
+    ListNat.index sl v = Some ofs.
 Proof.
-  (**r this is a property of kv_flatten, do it later *)
-Admitted.
+  unfold kv_flatten; intros.
+  eapply kv_flatten_aux_property; eauto.
+  eapply nth_error_In; eauto.
+Qed.
 
 
 Lemma init_state_pc:
@@ -184,8 +191,15 @@ Lemma jit_len_max:
     List.length l0 < JITTED_LIST_MAX_LENGTH /\
     ((Z.of_nat (ofs + Datatypes.length l0) * 4) < Int.max_unsigned)%Z.
 Proof.
-
-Admitted.
+  intros.
+  eapply nth_error_combiner in Hcombiner as Heq; eauto.
+  destruct Heq as (l1 & Hcom).
+  eapply combiner_nth_error in Hcom; eauto.
+  destruct Hcom as (ofs1 & bl1 & Hnth1 & Hcomp & Halu32 & HMAX & HMAX1).
+  rewrite Hnth in Hnth1.
+  inversion Hnth1; subst.
+  split; auto.
+Qed.
 
 Fixpoint exec_bin_list_inv (l: bin_code) (ofs: nat) (jit_blk: block)
   (ars: aregset) (astk: astack) (astkb: block) (m: mem): Prop :=
@@ -364,10 +378,10 @@ Axiom _bpf_get_call_equiv:
   (Hargs : args = [rs R1; rs R2; rs R3; rs R4; rs R5])
   (Hext : external_call ef ge args m t (Vint res) m')
   (Hrs1 : rs' = nextinstr (BPregmap.set R0 (Vint res) rs)),
-  BSemanticsSimpl._bpf_get_call s sg m = Some (Vint res, m').
+  BState._bpf_get_call s sg m = Some (Vint res, m').
 
 Lemma jit_call_simpl_exec_bin_code_equiv:
-  forall bl n v l0 ofs jit_blk m (rs rs': regset) m' c kl kv l
+  forall bl n v l0 ofs jit_blk m (rs rs': regset) m' c kl kv l sl
   (Hvalid_jit : Mem.valid_block m jit_blk)
   (Hnth : nth_error bl n = Some (v, (ofs, l0)))
   (Hofs: (Z.of_nat ((ofs + List.length l0) * 4) < Int.max_unsigned)%Z)
@@ -381,8 +395,9 @@ Lemma jit_call_simpl_exec_bin_code_equiv:
   (Hcombiner : combiner kl = Some bl)
   (Hconcat : concat_bin bl = (kv, l))
   (Hreg_inv: reg_inv (State rs m))
-  (Hle_pc : v < Datatypes.length c),
-    match BState.jit_call_simplb (kv_flatten kv (Datatypes.length c)) rs m with
+  (Hle_pc : v < Datatypes.length c)
+  (HKV: kv_flatten kv (Datatypes.length c) = Some sl),
+    match BState.jit_call_simplb sl rs m with
     | Some (rs'0, m'0) => Some (rs'0, m'0, BPF_OK)
     | None => None
     end = Some (rs', m', BPF_OK).
@@ -393,6 +408,12 @@ Proof.
   rewrite Hjit_blk; clear Hjit_blk.
 
   rewrite <- Hpc_eq.
+  assert (Heq: Z.to_nat (Int.unsigned (Int.repr (Z.of_nat v))) = v). {
+    rewrite Int.unsigned_repr.
+    apply Nat2Z.id.
+    change Int.max_unsigned with 4294967295%Z; lia.
+  }
+  rewrite Heq; clear Heq.
   erewrite kv_flatten_property; eauto.
 
   unfold exec_bin_code in Hexe.
@@ -454,7 +475,7 @@ Qed.
 
 
 Theorem forward_from_ts_to_interpreter_simpl:
-  forall rs1 rs2 st1 st2 m1 m2 c kl bl kv l ge jit_blk t mrs,
+  forall rs1 rs2 st1 st2 m1 m2 c kl bl kv l ge jit_blk t mrs sl,
     bstep _bpf_get_call (memory_region_mapping mrs) c bl jit_blk ge
       st1 t st2 ->
 
@@ -470,11 +491,13 @@ Theorem forward_from_ts_to_interpreter_simpl:
     concat_bin bl = (kv, l) ->
     reg_inv st1 ->
     List.length l < JITTED_LIST_MAX_LENGTH ->
+    kv_flatten kv (List.length c) = Some sl ->
 
-    step c (kv_flatten kv (List.length c)) (List.length c) rs1 (List.length mrs) mrs m1 =
+    step c sl (List.length c) rs1 (List.length mrs) mrs m1 =
       Some (rs2, m2, BPF_OK).
 Proof.
-  induction 1; intros Hst1 Hst2 Hjit_blk Hvalid_jit Hlen_max Hanalyzer Hcombiner Hconcat Hreg_inv Hjit_len_max;
+  induction 1; intros Hst1 Hst2 Hjit_blk Hvalid_jit Hlen_max Hanalyzer
+    Hcombiner Hconcat Hreg_inv Hjit_len_max HKV;
     injection Hst1 as Heq1 Heq2; subst rs1 m1;
     injection Hst2 as Heq3 Heq4; subst rs2 m2;
     unfold step, eval_ins.

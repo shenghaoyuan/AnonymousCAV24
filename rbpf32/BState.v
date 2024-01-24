@@ -10,6 +10,15 @@ From bpf.rbpf32 Require Import TSSyntax JITConfig.
 From Coq Require Import List ZArith.
 Import ListNotations.
 
+Definition get_mem_region (n mrs_num: nat) (mrs: MyMemRegionsType): option memory_region :=
+  if (Nat.ltb n mrs_num) then
+    match List.nth_error mrs n with
+    | Some mr => Some mr
+    | None => None
+    end
+  else
+    None.
+
 
 Record state := mkst {
   flag    : bpf_flag;
@@ -22,6 +31,9 @@ Record state := mkst {
   tp_bin  : List32.t;
   bpf_m   : Memory.mem;
 }.
+
+Definition eval_cmp (cop: cmpOp) (d: breg) (s: breg+imm) (st:state): option bool :=
+  eval_cmp cop (regs_st st) (bpf_m st) d s.
 
 Definition init_mem: mem := Mem.empty.
 
@@ -37,9 +49,9 @@ Definition init_state: state := {|
   bpf_m   := init_mem;
  |}.
 
-Definition upd_pc (p: int) (st:state): state := {|
+Definition upd_pc (p: val) (st:state): state := {|
   flag    := flag st;
-  regs_st := (regs_st st)#BPC <- (Vint p);
+  regs_st := (regs_st st)#BPC <- (Val.add (regs_st st)#BPC p);
   mrs_num := mrs_num st;
   bpf_mrs := bpf_mrs st;
   ins_len := ins_len st;
@@ -127,8 +139,7 @@ Definition load_mem (chunk: memory_chunk) (ptr: val) (st: state): option val :=
 Definition store_mem (ptr: val) (chunk: memory_chunk) (v: val) (st: state): option state :=
   match chunk with
   | Mint8unsigned | Mint16unsigned | Mint32 =>
-    let src := vint_to_vint chunk v in
-      match Mem.storev chunk (bpf_m st) ptr src with
+      match Mem.storev chunk (bpf_m st) ptr v with
       | Some m => Some (upd_mem m st)
       | None => None
       end
@@ -139,10 +150,15 @@ Definition store_mem (ptr: val) (chunk: memory_chunk) (v: val) (st: state): opti
 Definition eval_ins_len (st: state): int := Int.repr (Z.of_nat (ins_len st)).
 Definition eval_ins (st: state): option int64 :=
   match (regs_st st)#BPC with
-  | Vint i => List64AsArray.index (ins st) (Z.to_nat (Int.unsigned i))
+  | Vint i => 
+    if (Int.cmpu Clt i (Int.repr (Z.of_nat (ins_len st)))) then
+      List64AsArray.index (ins st) (Z.to_nat (Int.unsigned i))
+    else
+      None
   | _ => None
   end.
 
+Definition cmp_ptr32_nullM (v: val) (st: state): option bool := cmp_ptr32_null (bpf_m st) v.
 
 Definition jit_call_simplb (kv: list nat) (rs: regset) (m: mem): option (regset * mem) :=
   let fuel  := JITTED_LIST_MAX_LENGTH in
@@ -173,3 +189,5 @@ Definition jit_call_simplb (kv: list nat) (rs: regset) (m: mem): option (regset 
     end
   | _ => None
   end.
+
+Axiom _bpf_get_call : ident -> signature -> mem -> option (val * mem).

@@ -319,7 +319,8 @@ Definition f_add_key_value := {|
               (tptr (Tstruct _key_value2 noattr))) (Etempvar _pc tuint)
             (tptr (Tstruct _key_value2 noattr)))
           (Tstruct _key_value2 noattr)) _alu32_ofs tuint)
-      (Etempvar _ofs1 tuint))
+      (Ebinop Osub (Etempvar _ofs1 tuint) (Econst_int (Int.repr 1) tint)
+        tuint))
     (Sreturn None)))
 |}.
 

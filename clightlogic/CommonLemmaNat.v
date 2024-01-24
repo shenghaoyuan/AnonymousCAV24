@@ -46,6 +46,7 @@ Proof.
 Qed.
 
 Open Scope nat_scope.
+(*
 Definition byte_to_opcode_alu64_if (op: nat): opcode_alu64 :=
   let opcode_alu := Nat.land op 0xf0 in (**r masking operation *)
     if opcode_alu =? 0x00 then op_BPF_ADD64
@@ -124,7 +125,7 @@ Proof.
   intros.
   unfold byte_to_opcode_alu64_if.
   repeat simpl_nat.
-Qed.
+Qed. *)
 
 Definition byte_to_opcode_alu32_if (op: nat): opcode_alu32 :=
   let opcode_alu := Nat.land op 0xf0 in (**r masking operation *)

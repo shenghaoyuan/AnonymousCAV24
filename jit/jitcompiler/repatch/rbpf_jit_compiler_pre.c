@@ -27,7 +27,7 @@ static __attribute__((always_inline)) inline unsigned int eval_arm_ofs(struct ji
 
 static __attribute__((always_inline)) inline void add_key_value(struct jit_state* st, unsigned int pc, unsigned int ofs0, unsigned int ofs1){
   (*st).tp_kv[pc].arm_ofs = ofs0;
-  (*st).tp_kv[pc].alu32_ofs = ofs1;
+  (*st).tp_kv[pc].alu32_ofs = ofs1-1;
   return ;
 }
 

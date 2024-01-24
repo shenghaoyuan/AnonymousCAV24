@@ -50,7 +50,11 @@ Fixpoint analyzer_aux (c: code) (fuel pc: nat): option (list (nat * bpf_code)) :
         | Some l1 =>
           match analyzer_aux c n (pc + List.length l1) with
           | None => None
-          | Some l => Some ((pc, l1) :: l)
+          | Some l => Some ((pc, l1) :: l) (*
+            if (List.existsb (fun x => Nat.eqb (fst x) pc) l) then
+              Some l
+            else
+              Some ((pc, l1) :: l) *)
           end
         end
 
@@ -67,7 +71,11 @@ Fixpoint analyzer_aux (c: code) (fuel pc: nat): option (list (nat * bpf_code)) :
               | Some l1 =>
                 match analyzer_aux c n (S pc) with
                 | None => None
-                | Some l => Some ((lbl, l1) :: l)
+                | Some l => Some ((lbl, l1) :: l) (*
+                    if (List.existsb (fun x => Nat.eqb (fst x) lbl) l) then
+                      Some l
+                    else
+                      Some ((lbl, l1) :: l) *)
                 end
               end
             | _ => analyzer_aux c n (S pc)
@@ -185,7 +193,12 @@ Proof.
     destruct decode_ind as [bpf_ins | ] eqn: Hbpf; [| inversion HA].
     destruct bpf_ins; try (eapply IHk; eauto; lia).
     + destruct get_alu32_list as [l1 | ] eqn: Hget; [| inversion HA].
-      destruct analyzer_aux as [lt | ] eqn: Haux; [injection HA as Heq; subst kl | inversion HA].
+      destruct analyzer_aux as [lt | ] eqn: Haux; [ | inversion HA]. (*
+      destruct List.existsb eqn: He; injection HA as Heq; subst kl.
+      { eapply IHk; eauto. lia. } *)
+
+      injection HA as Heq; subst kl.
+
       simpl in Hin.
       destruct Hin as [Heq | Hin].
       * injection Heq as Heq1 Heq2; subst t; subst l1.
@@ -204,7 +217,10 @@ Proof.
       destruct decode_ind as [bpf_insk | ] eqn: Hbpfk in HA; [| inversion HA].
       destruct bpf_insk; try (eapply IHk; eauto; lia).
       destruct get_alu32_list as [l1 | ] eqn: Hget in HA; [| inversion HA].
-      destruct analyzer_aux as [lt | ] eqn: Haux; [injection HA as Heq; subst kl | inversion HA].
+      destruct analyzer_aux as [lt | ] eqn: Haux; [ | inversion HA]. (*
+      destruct List.existsb eqn: He; injection HA as Heq; subst kl.
+      { eapply IHk; eauto. lia. } *) injection HA as Heq; subst kl.
+
       simpl in Hin.
       destruct Hin as [Heq | Hin].
       * injection Heq as Heq1 Heq2; subst l1.
@@ -223,7 +239,10 @@ Proof.
       destruct decode_ind as [bpf_insk | ] eqn: Hbpfk in HA; [| inversion HA].
       destruct bpf_insk; try (eapply IHk; eauto; lia).
       destruct get_alu32_list as [l1 | ] eqn: Hget in HA; [| inversion HA].
-      destruct analyzer_aux as [lt | ] eqn: Haux; [injection HA as Heq; subst kl | inversion HA].
+      destruct analyzer_aux as [lt | ] eqn: Haux; [ | inversion HA]. (*
+      destruct List.existsb eqn: He; injection HA as Heq; subst kl.
+      { eapply IHk; eauto. lia. } *) injection HA as Heq; subst kl.
+
       simpl in Hin.
       destruct Hin as [Heq | Hin].
       * injection Heq as Heq1 Heq2; subst l1.

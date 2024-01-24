@@ -88,13 +88,13 @@ Definition cmp_ptr32_nullM (v: valptr8_t): M bool := fun st =>
   | None     => None (**r TODO: we should infer this *)
   end.
 
-Definition int64_to_dst_reg (ins: int64): M reg := fun st =>
+Definition get_dst (ins: int64): M reg := fun st =>
   match int64_to_dst_reg' ins with
   | Some r => Some (r, st)
   | None => None (**r TODO: bpf verifier / verifier-invariant should ensure this branch is unreachable *)
   end.
 
-Definition int64_to_src_reg (ins: int64): M reg := fun st =>
+Definition get_src (ins: int64): M reg := fun st =>
   match int64_to_src_reg' ins with
   | Some r => Some (r, st)
   | None => None (**r TODO: bpf verifier / verifier-invariant should ensure this branch is unreachable *)
@@ -114,6 +114,10 @@ Definition jit_call: M unit := fun st =>
   | None => None
   | Some st1 => Some (tt, st1)
   end.
+
+Definition get_offset (ins: int64):M sint32_t := returnM (get_offset ins).
+
+Definition get_immediate (ins: int64):M sint32_t := returnM (get_immediate ins).
 
 (* Given the immediate of the call, it returns a function pointer *)
 
