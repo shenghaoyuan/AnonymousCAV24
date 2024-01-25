@@ -59,14 +59,14 @@ Definition match_ins (ins_blk: block) (st: hybrid_state) (m:mem) :=
 
 Definition match_list_kv (m:mem) (b: block) (l: ListKeyV.t) :=
   forall i, (0 <= i < List.length l)%nat ->
-    Mem.loadv AST.Mint32 m  (Vptr b (Ptrofs.repr (4 * (Z.of_nat i)))) =
+    Mem.loadv AST.Mint32 m  (Vptr b (Ptrofs.repr (8 * (Z.of_nat i)))) =
       Some (Vint (Int.repr (Z.of_nat (arm_ofs (List.nth i l empty_kv))))) /\
-    Mem.loadv AST.Mint32 m  (Vptr b (Ptrofs.repr (4 * (Z.of_nat (S i))))) =
+    Mem.loadv AST.Mint32 m  (Vptr b (Ptrofs.repr (8 * (Z.of_nat i) + 4))) =
       Some (Vint (Int.repr (Z.of_nat (alu32_ofs (List.nth i l empty_kv))))).
 
 Definition match_kv (ins_blk: block) (st: hybrid_state) (m:mem) :=
-  List.length (input_ins st) = (input_len st) /\
-  Z.of_nat (List.length (input_ins st)) * 8 <= Ptrofs.max_unsigned /\
+  List.length (tp_kv st) = (input_len st) /\
+  Z.of_nat (List.length (tp_kv st)) * 8 <= Ptrofs.max_unsigned /\
   match_list_kv m ins_blk (tp_kv st).
 
 Definition match_list_jit (m:mem) (b: block) (l: list int) :=

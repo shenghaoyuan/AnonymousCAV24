@@ -112,7 +112,7 @@ static __attribute__((always_inline)) inline void jit_call(struct havm_state* st
   unsigned int ofs;
   ofs = (*st).tp_kv[(*st).pc_loc].arm_ofs;
   //_magic_function(ofs, st);
-  __builtin_execbin(4000U, 52U, 0U, (*st).tp_bin + ofs, st);
+  __builtin_execbin(4000U, 48U, 0U, (*st).tp_bin + ofs, st);
   //(*st).tp_bin + ofs, st
   (*st).pc_loc += (*st).tp_kv[(*st).pc_loc].alu32_ofs;
   return ;
@@ -154,23 +154,20 @@ static __attribute__((always_inline)) inline unsigned int get_src32(struct havm_
 {
   int imm;
   unsigned int src;
+  unsigned int v;
   if (0U == (x & 8U)) {
     imm = get_immediate(ins);
     return imm;
   } else {
     src = get_src(ins);
-    return eval_reg(st, src);
+    v = eval_reg(st, src);
+    return v;
   }
 }
 
 static __attribute__((always_inline)) inline unsigned char get_opcode_ins(unsigned long long ins)
 {
   return (unsigned char) (ins & 255LLU);
-}
-
-static __attribute__((always_inline)) inline unsigned char get_opcode_alu32(unsigned char op)
-{
-  return (unsigned char) (op & 240);
 }
 
 static __attribute__((always_inline)) inline unsigned char get_opcode_branch(unsigned char op)

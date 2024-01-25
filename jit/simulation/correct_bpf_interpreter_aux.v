@@ -1,36 +1,18 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
 From Coq Require Import List ZArith.
 Import ListNotations.
 From dx Require Import ResultMonad IR.
-From bpf.comm Require Import Flag MemRegion Flag Regs State Monad rBPFAST rBPFValues rBPFMonadOp.
-From bpf.monadicmodel Require Import rBPFInterpreter.
+From bpf.comm Require Import Flag MemRegion Flag Regs rBPFAST rBPFValues.
 
 From compcert Require Import Coqlib Values AST Clight Memory Memtype Integers.
 
-From bpf.clight Require Import interpreter.
-
 From bpf.clightlogic Require Import Clightlogic clight_exec CommonLemma CorrectRel.
 
-From bpf.simulation Require Import correct_upd_flag correct_check_pc correct_check_pc_incr correct_eval_flag correct_step.
+From bpf.jit.simulation Require Import correct_upd_flag correct_check_pc correct_check_pc_incr correct_eval_flag correct_step.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
+
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 Open Scope Z_scope.
 
@@ -53,7 +35,7 @@ Section Bpf_interpreter_aux.
   Definition res : Type := unit.
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := bpf_interpreter_aux.
+  Definition f : arrow_type args (M res) := bpf_interpreter_aux.
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
   Definition fn: Clight.function := f_bpf_interpreter_aux.
@@ -65,7 +47,7 @@ Section Bpf_interpreter_aux.
                     (DList.DNil _))).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state := fun x => StateLess _ (eq Vundef).
+  Definition match_res : res -> Inv hybrid_state := fun x => StateLess _ (eq Vundef).
 
 
 Lemma bpf_interpreter_aux_eq: forall n,
@@ -74,13 +56,13 @@ Lemma bpf_interpreter_aux_eq: forall n,
     else
       (bindM check_pc (fun b0 =>
         if b0 then
-        (bindM rBPFInterpreter.step (fun _ =>
+        (bindM step (fun _ =>
           (bindM eval_flag (fun f =>
             if flag_eq f BPF_OK then
               (bindM check_pc_incr (fun b1 =>
                 if b1 then
                   (bindM (upd_pc Int.one) (fun _ =>
-                    bpf_interpreter_aux (Nat.pred n)))
+                    bpf_interpreter_aux (Init.Nat.pred n)))
                 else
                   bindM (upd_flag BPF_ILLEGAL_LEN) (fun _ : unit => returnM tt)))
             else
@@ -117,7 +99,7 @@ Qed.
       remember (0 =? 0)%nat as cmp.
       simpl.
       rewrite Heqcmp.
-      correct_forward.
+      correct_forward. unfold bindM, returnM.
       correct_forward.
 
       get_invariant _st.
@@ -196,7 +178,7 @@ Qed.
     reflexivity.
     prove_in_inv.
 
-    intros.
+    intros. unfold bindM, returnM.
 
     (**r correct_body _ _ (bindM (eval_pc _ _) ... *)
     correct_forward.
@@ -269,12 +251,12 @@ Qed.
             simpl. unfold upd_flag; reflexivity.
             simpl.
             unfold bpf_interpreter_aux.
-            unfold bindM.
+            unfold bindM. unfold Monad.bindM, Monad.returnM in *.
             apply Coq.Logic.FunctionalExtensionality.functional_extensionality; intro.
             destruct check_pc; [| reflexivity].
             destruct p0.
             destruct b; [| reflexivity].
-            destruct rBPFInterpreter.step; [| reflexivity].
+            destruct step; [| reflexivity].
             destruct p0.
             destruct eval_flag; [| reflexivity].
             destruct p0.
@@ -285,31 +267,31 @@ Qed.
             destruct upd_pc; [| reflexivity].
             destruct p0.
             unfold bpf_interpreter_aux in IHc.
-            unfold bindM in IHc.
+            unfold bindM in IHc. unfold Monad.bindM, Monad.returnM in *.
             rewrite IHc.
 
-            destruct (fix bpf_interpreter_aux (fuel : nat) : M State.state unit :=
+            destruct (fix bpf_interpreter_aux (fuel : nat) : M  unit :=
          match fuel with
          | 0%nat => upd_flag BPF_ILLEGAL_LEN
          | Datatypes.S fuel0 =>
-             fun st : State.state =>
+             fun st : hybrid_state =>
              match check_pc st with
              | Some (x', st') =>
                  (if x'
                   then
-                   fun st0 : State.state =>
-                   match rBPFInterpreter.step st0 with
+                   fun st0 : hybrid_state =>
+                   match step st0 with
                    | Some (_, st'0) =>
                        match eval_flag st'0 with
                        | Some (x'1, st'1) =>
                            (if flag_eq x'1 BPF_OK
                             then
-                             fun st1 : State.state =>
+                             fun st1 : hybrid_state =>
                              match check_pc_incr st1 with
                              | Some (x'2, st'2) =>
                                  (if x'2
                                   then
-                                   fun st2 : State.state =>
+                                   fun st2 : hybrid_state =>
                                    match upd_pc Int.one st2 with
                                    | Some (_, st'3) => bpf_interpreter_aux fuel0 st'3
                                    | None => None
@@ -329,7 +311,7 @@ Qed.
             destruct p0.
             auto.
             }
-            rewrite Heq; clear Heq.
+            rewrite Heq; clear Heq. unfold bindM, returnM.
             correct_forward.
 
             get_invariant _st.

@@ -1,36 +1,18 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
 From Coq Require Import List ZArith.
 Import ListNotations.
 From dx Require Import ResultMonad IR.
-From bpf.comm Require Import LemmaInt MemRegion Regs State Monad rBPFAST rBPFValues.
-From bpf.monadicmodel Require Import rBPFInterpreter.
+From bpf.comm Require Import LemmaInt MemRegion Regs rBPFAST rBPFValues.
 
 From compcert Require Import Coqlib Values Clight Memory Integers.
 
-From bpf.clight Require Import interpreter.
-
 From bpf.clightlogic Require Import Clightlogic clight_exec CommonLemma CorrectRel.
 
-From bpf.simulation Require Import correct_get_sub correct_get_add correct_get_start_addr correct_get_block_size correct_get_block_perm.
+From bpf.jit.simulation Require Import correct_get_sub correct_get_add correct_get_start_addr correct_get_block_size correct_get_block_perm.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
+
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 Open Scope Z_scope.
 
@@ -50,7 +32,7 @@ Definition f := check_mem_aux2.
 Definition fn: Clight.function := f_check_mem_aux2.
 
 Definition match_arg  :
-  DList.t (fun x => x -> Inv State.state) args :=
+  DList.t (fun x => x -> Inv hybrid_state) args :=
   dcons
     (statefull (mr_correct ))
     (dcons
@@ -60,14 +42,14 @@ Definition match_arg  :
            (dcons (stateless match_chunk)
                         (DList.DNil _)))).
 
-Definition match_res : res -> Inv State.state := stateless eq.
+Definition match_res : res -> Inv hybrid_state := stateless eq.
 
 Lemma correct_function_check_mem_aux2_correct : forall a, correct_function _ p args res f fn ModNothing true match_state match_arg match_res a.
 Proof.
   correct_function_from_body args.
   correct_body.
   unfold f. unfold check_mem_aux2.
-  simpl.
+  simpl. unfold bindM, returnM.
 
   correct_forward.
 

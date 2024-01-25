@@ -17,7 +17,8 @@ Definition get_src32 (x: nat8) (ins: int64): M valu32_t :=
       returnM (sint32_to_vint imm)
   else
     do src    <-- get_src ins;
-      eval_reg src.
+    do v      <-- eval_reg src;
+      returnM v.
 
 Definition get_opcode_ins (ins: int64): M nat8 :=
   returnM (get_opcode ins).
@@ -273,7 +274,7 @@ Definition step: M unit :=
   do opc  <-- get_opcode_nat op;
   do dst  <-- get_dst ins;
   match opc with
-  | op_BPF_ALU32   => jit_call
+  | op_BPF_ALU32   => do _ <-- jit_call; returnM tt
   | op_BPF_Branch  =>
     do dst32  <-- eval_reg dst;
     do ofs    <-- get_offset ins;

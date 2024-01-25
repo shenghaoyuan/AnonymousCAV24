@@ -61,7 +61,8 @@ Record hybrid_state := mkst {
       mkv      : Mem.loadv AST.Mptr m (Vptr st_blk (Ptrofs.repr 68)) = Some (Vptr kv_blk (Ptrofs.repr 0)) /\ match_kv kv_blk st m;
       mbin_len : Mem.loadv AST.Mint32 m (Vptr st_blk (Ptrofs.repr 72)) = Some (Vint (Int.repr (Z.of_nat (tp_bin_len st)))) /\
                   Z.of_nat (tp_bin_len st) >= 1;
-      mbin     : Mem.loadv AST.Mptr m (Vptr st_blk (Ptrofs.repr 76)) = Some (Vptr jit_blk (Ptrofs.repr 0)) /\ match_jit jit_blk st m;
+      mbin     : Mem.loadv AST.Mptr m (Vptr st_blk (Ptrofs.repr 76)) = Some (Vptr jit_blk (Ptrofs.repr 0)) /\
+                  match_jit jit_blk st m /\ jit_state_block = st_blk /\ jit_arm_block = jit_blk;
       mperm    : Mem.range_perm m st_blk 0 80 Cur Freeable /\
                  Mem.range_perm m mrs_blk   0 (Z.of_nat (mrs_num st)) Cur Freeable /\
                  Mem.range_perm m ins_blk   0 (Z.of_nat (input_len st)) Cur Readable /\
@@ -612,22 +613,23 @@ Proof.
   - (**r match_ins *)
     unfold match_jit.
     unfold match_jit in mbin0.
-    destruct mbin0 as (Hload & mins_len & mins_max & mbin0).
+    destruct mbin0 as (Hload & (mins_len & mins_max & mbin0) & Hblk1 & Hblk2).
     split.
     rewrite <- Hload.
     eapply Mem.load_store_other; eauto.
     right; right.
     rewrite Ptrofs_unsigned_repr_n in *; try (simpl; lia).
     unfold id_of_reg, size_chunk; destruct r; lia.
-
-    split; [assumption | ].
-    split; [assumption | ].
     assert (Hins_eq : tp_bin (upd_reg r (Vint vi) st0) = tp_bin st0). {
       unfold upd_reg.
       simpl.
       reflexivity.
     }
     rewrite Hins_eq; clear Hins_eq.
+
+    split.
+    split; [assumption | ].
+    split; [assumption | ].
     destruct minvalid0 as (_ & minvalid0 & _).
     eapply upd_preserves_match_list_jit; eauto.
     rewrite NoDup_cons_iff in minvalid0.
@@ -637,6 +639,8 @@ Proof.
     rewrite HF.
     right. right. right.
     left; reflexivity.
+
+    split; assumption.
 
   - clear - mperm0 Hstore.
     unfold Mem.range_perm in *.
@@ -662,7 +666,7 @@ Proof.
     eapply Mem.perm_store_1; eauto.
   - rewrite <- upd_reg_same_mem.
     intuition.
-    apply H20; auto.
+    apply H21; auto.
     eapply Mem.store_valid_block_2; eauto.
 Qed.
 
@@ -789,7 +793,6 @@ Proof.
     destruct Hst' as (_ , _, _, _, _, _, _, _, Hins, _, _, _, (_ & Hneq_blk & _)).
     unfold match_kv in *.
     destruct Hins as (Hload & Hins_len & Hins_max & Hins).
-    rewrite <- upd_pc_same_ins.
     rewrite <- upd_pc_same_ins_len.
     rewrite <- upd_pc_same_tp_kv.
 
@@ -820,7 +823,7 @@ Proof.
   -
     destruct Hst' as (_ , _, _, _, _, _, _, _, _, _, Hins, _, (_ & Hneq_blk & _)).
     unfold match_jit in *.
-    destruct Hins as (Hload & Hins_len & Hins_max & Hins).
+    destruct Hins as (Hload & (Hins_len & Hins_max & Hins) & Hblk1 & Hblk2).
     rewrite <- upd_pc_same_ins.
     rewrite <- upd_pc_same_tp_bin_len.
     rewrite <- upd_pc_same_tp_bin.
@@ -831,6 +834,7 @@ Proof.
     right; right.
     rewrite Ptrofs_unsigned_repr_n in *; try (simpl; lia).
 
+    split.
     split; [assumption |].
     split; [assumption |].
     eapply upd_preserves_match_list_jit; eauto.
@@ -839,6 +843,8 @@ Proof.
     apply Hneq_blk.
     rewrite HF. right. right; right.
     left; reflexivity.
+
+    split; assumption.
   -
     destruct Hst' as (_ , _, _, _, _, _, _, _, _, _, _, Hperm, _).
     rewrite <- upd_pc_same_mrs_num.
@@ -981,7 +987,6 @@ Proof.
     destruct Hst' as (_ , _, _, _, _, _, _, _, Hins, _, _, _, (_ & Hneq_blk & _)).
     unfold match_kv in *.
     destruct Hins as (Hload & Hins_len & Hins_max & Hins).
-    rewrite <- upd_flag_same_ins.
     rewrite <- upd_flag_same_ins_len.
     rewrite <- upd_flag_same_tp_kv.
 
@@ -1011,7 +1016,7 @@ Proof.
   -
     destruct Hst' as (_ , _, _, _, _, _, _, _, _, _, Hins, _, (_ & Hneq_blk & _)).
     unfold match_jit in *.
-    destruct Hins as (Hload & Hins_len & Hins_max & Hins).
+    destruct Hins as (Hload & (Hins_len & Hins_max & Hins) & Hblk1 & Hblk2).
     rewrite <- upd_flag_same_ins.
     rewrite <- upd_flag_same_tp_bin_len.
     rewrite <- upd_flag_same_tp_bin.
@@ -1022,6 +1027,7 @@ Proof.
     right; right.
     rewrite Ptrofs_unsigned_repr_n in *; try (simpl; lia).
 
+    split; [| split; assumption].
     split; [assumption |].
     split; [assumption |].
     eapply upd_preserves_match_list_jit; eauto.
@@ -1314,7 +1320,7 @@ Proof.
     destruct Hst' as (_, _, _, _, _, _, _, _, _, _, Hins, _, _).
     unfold Mem.loadv in *.
     unfold match_jit in *.
-    destruct Hins as (Hload & Hlen & Hmax & Hmatch).
+    destruct Hins as (Hload & (Hlen & Hmax & Hmatch) & Hblk1 & Hblk2).
     unfold upd_mem; simpl.
     split.
 
@@ -1323,6 +1329,7 @@ Proof.
     assumption.
     intuition.
 
+    split; [| split; assumption].
     split; [assumption| ].
     split; [assumption| ].
     eapply upd_preserves_match_list_jit; eauto.

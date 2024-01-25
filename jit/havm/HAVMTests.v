@@ -74,7 +74,6 @@ GenerateIntermediateRepresentation SymbolIRs
   get_immediate
   get_src32
   get_opcode_ins
-  get_opcode_alu32
   get_opcode_branch
   get_opcode_mem_ld_reg
   get_opcode_mem_st_imm

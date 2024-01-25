@@ -1,32 +1,13 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import State Monad.
-From bpf.monadicmodel Require Import rBPFInterpreter.
 From Coq Require Import List Lia ZArith.
 From compcert Require Import Integers Values Clight Memory.
 Import ListNotations.
 
 From bpf.clightlogic Require Import Clightlogic CorrectRel CommonLemma.
 
-From bpf.clight Require Import interpreter.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 (**
 Print get_add.
@@ -49,7 +30,7 @@ Section Get_add.
   Definition res : Type := (val:Type).
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := get_add.
+  Definition f : arrow_type args (M res) := get_add.
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
   Definition fn: Clight.function := f_get_add.
@@ -61,7 +42,7 @@ Section Get_add.
                     (DList.DNil _))).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state := stateless val32_correct.
+  Definition match_res : res -> Inv hybrid_state := stateless val32_correct.
 
   Instance correct_function_get_add : forall a, correct_function _ p args res f fn ModNothing true match_state match_arg_list match_res a.
   Proof.

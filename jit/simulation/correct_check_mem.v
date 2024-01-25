@@ -1,25 +1,4 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import MemRegion State Monad.
-From bpf.monadicmodel Require Import rBPFInterpreter.
-From dx.Type Require Import Bool.
-From dx Require Import IR.
+From bpf.comm Require Import MemRegion.
 From Coq Require Import List ZArith.
 From compcert Require Import Integers Values Clight Memory AST.
 From compcert Require Import Coqlib.
@@ -27,11 +6,12 @@ Import ListNotations.
 
 From bpf.clightlogic Require Import clight_exec Clightlogic CorrectRel CommonLemma.
 
-From bpf.clight Require Import interpreter.
+From bpf.jit.simulation Require Import correct_eval_mrs_num correct_eval_mrs_regions correct_check_mem_aux correct_cmp_ptr32_nullM.
 
-From bpf.simulation Require Import correct_eval_mrs_num correct_eval_mrs_regions correct_check_mem_aux correct_cmp_ptr32_nullM.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 (**
 Check check_mem.
@@ -50,7 +30,7 @@ Section Check_mem.
   Definition res : Type := (val:Type).
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := check_mem.
+  Definition f : arrow_type args (M res) := check_mem.
 
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
@@ -66,7 +46,7 @@ Section Check_mem.
             (DList.DNil _)))).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state:= stateless eq.
+  Definition match_res : res -> Inv hybrid_state := stateless eq.
 
   Instance correct_function_check_mem : forall a, correct_function _ p args res f fn ModNothing  false match_state match_arg_list match_res a.
   Proof.
@@ -75,7 +55,7 @@ Section Check_mem.
     (** how to use correct_* *)
     unfold INV.
     unfold f, cl_app.
-    unfold check_mem.
+    unfold check_mem. unfold bindM, returnM.
     correct_forward.
     - get_invariant _st.
       unfold eval_inv in *.

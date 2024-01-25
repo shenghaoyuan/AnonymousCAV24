@@ -1,23 +1,4 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import Flag Regs State Monad rBPFMonadOp.
-From bpf.monadicmodel Require Import rBPFInterpreter.
+From bpf.comm Require Import Flag Regs.
 From bpf.monadicmodel Require Import Opcode.
 From Coq Require Import List Lia ZArith.
 From compcert Require Import Integers Values Clight Memory.
@@ -25,11 +6,12 @@ Import ListNotations.
 
 From bpf.clightlogic Require Import Clightlogic CorrectRel CommonLemma CommonLib CommonLemmaNat.
 
-From bpf.clight Require Import interpreter.
+From bpf.jit.simulation Require Import correct_eval_ins correct_get_opcode_ins correct_get_opcode_nat correct_get_dst correct_eval_reg correct_get_src correct_get_src32 correct_get_offset correct_step_opcode_branch correct_get_immediate correct_get_addr_ofs correct_step_opcode_mem_ld_reg correct_step_opcode_mem_st_imm correct_step_opcode_mem_st_reg correct_upd_flag correct_jit_call_ax.
 
-From bpf.simulation Require Import correct_eval_ins correct_get_opcode_ins correct_get_opcode_nat correct_get_dst correct_eval_reg correct_get_src correct_get_src32 correct_step_opcode_alu32 correct_get_offset correct_step_opcode_branch correct_get_immediate correct_get_addr_ofs correct_step_opcode_mem_ld_reg correct_step_opcode_mem_st_imm correct_step_opcode_mem_st_reg correct_upd_flag.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 
 (**
@@ -52,7 +34,7 @@ Section Step.
   Definition res : Type := unit.
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := rBPFInterpreter.step.
+  Definition f : arrow_type args (M res) := step.
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
   Definition fn: Clight.function := f_step.
@@ -63,7 +45,7 @@ Section Step.
                     (DList.DNil _)).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state := fun x => StateLess _ (eq Vundef).
+  Definition match_res : res -> Inv hybrid_state := fun x => StateLess _ (eq Vundef).
 
 
   Instance correct_function_step: forall a, correct_function _ p args res f fn ModSomething false match_state match_arg_list match_res a.
@@ -71,7 +53,7 @@ Section Step.
     correct_function_from_body args.
     correct_body.
 
-    unfold f, rBPFInterpreter.step.
+    unfold f, step, bindM.
     simpl.
     (** goal: correct_body _ _ (bindM (eval_ins _) ... *)
     correct_forward.
@@ -145,69 +127,12 @@ Section Step.
         correct_forward.
 
         get_invariant _st.
-        get_invariant _dst.
-        exists (v::v0::nil).
+        exists (v::nil).
         split.
-        unfold map_opt, exec_expr. rewrite p0,p1; reflexivity.
+        unfold map_opt, exec_expr. rewrite p0; reflexivity.
         intros; simpl.
         intuition eauto.
-        intros.
-
-        (** goal: correct_body _ _ (bindM (get_src32 _) ... *)
-        correct_forward.
-
-        get_invariant _st.
-        get_invariant _op.
-        get_invariant _ins.
-        exists (v::v0::v1::nil).
-        split.
-        unfold map_opt, exec_expr. rewrite p0,p1,p2; reflexivity.
-        intros; simpl.
-        intuition eauto.
-
-        intros.
-
-        assert (Heq:
-              step_opcode_alu32 x3 x4 x2 x0 =
-              bindM (step_opcode_alu32 x3 x4 x2 x0) (fun _ : unit => returnM tt)). {
-          (*clear - st6. *)
-          unfold step_opcode_alu32, get_opcode_alu32.
-          unfold bindM, returnM.
-          destruct byte_to_opcode_alu32; try reflexivity; unfold upd_reg.
-          val_op. val_op.  val_op.
-          destruct rBPFValues.comp_ne; try reflexivity.
-          destruct rBPFValues.val32_divu; try reflexivity.
-          destruct Val.or; try reflexivity.
-          destruct Val.and; try reflexivity.
-          destruct rBPFValues.compu_lt; try reflexivity.
-          destruct Val.shl; try reflexivity.
-          destruct rBPFValues.compu_lt; try reflexivity.
-          destruct Val.shru; try reflexivity.
-          destruct (x0 =? 132)%nat; try reflexivity.
-          destruct Val.neg; try reflexivity.
-          destruct rBPFValues.comp_ne; try reflexivity.
-          destruct rBPFValues.val32_modu; try reflexivity.
-          destruct Val.xor; try reflexivity.
-          destruct x4; try reflexivity.
-          destruct rBPFValues.compu_lt; try reflexivity.
-          destruct Val.shr; try reflexivity.
-        }
-        rewrite Heq; clear Heq.
-        correct_forward.
-
-        get_invariant _st.
-        get_invariant _dst32.
-        get_invariant _src32.
-        get_invariant _dst.
-        get_invariant _op.
-        exists (v ::v0::v1::v2 ::v3 :: nil).
-        unfold map_opt, exec_expr.
-        rewrite p0, p1, p2, p3, p4.
-        split.
-        reflexivity.
-        intros; simpl.
-        intuition eauto.
-        intros.
+        intros. unfold returnM.
 
         (**r goal: correct_body p unit (returnM tt) fn (Sreturn None) modifies *)
         correct_forward.
@@ -267,14 +192,15 @@ Section Step.
         intros; simpl.
         intuition eauto.
 
-        intros.
+        intros. unfold rBPFValues.sint32_to_uint32.
 
         assert (Heq:
               step_opcode_branch x3 x5 x4 x0 =
               bindM (step_opcode_branch x3 x5 x4 x0) (fun _ : unit => returnM tt)). {
           unfold step_opcode_branch, get_opcode_branch.
-          unfold bindM, returnM.
+          unfold bindM, returnM. unfold Monad.bindM, Monad.returnM.
           destruct byte_to_opcode_branch; try reflexivity; unfold upd_pc.
+          unfold DxNat.nat8_0x05.
           destruct (x0 =? 5)%nat; try reflexivity.
           apply Coq.Logic.FunctionalExtensionality.functional_extensionality.
           intros.
@@ -289,7 +215,7 @@ Section Step.
           end.
           all: simpl_funcExt.
           all: destruct (Int.cmpu Cle (Int.add (pc_loc x6) x4)
-            (Int.sub (Int.repr (Z.of_nat (ins_len x6))) Int.one))%bool; try reflexivity.
+            (Int.sub (Int.repr (Z.of_nat (input_len x6))) Int.one))%bool; try reflexivity.
           destruct _bpf_get_call; try reflexivity.
           destruct p0.
           destruct cmp_ptr32_nullM; try reflexivity.
@@ -311,6 +237,7 @@ Section Step.
           destruct v0; try reflexivity.
         }
         rewrite Heq; clear Heq.
+        unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -407,7 +334,7 @@ Section Step.
               bindM (step_opcode_mem_ld_reg x6 x2 x0) (fun _ : unit => returnM tt)). {
           clear.
           unfold step_opcode_mem_ld_reg, get_opcode_mem_ld_reg.
-          unfold bindM, returnM.
+          unfold bindM, returnM. unfold Monad.bindM, Monad.returnM.
           destruct byte_to_opcode_mem_ld_reg; try reflexivity.
           all: apply Coq.Logic.FunctionalExtensionality.functional_extensionality;
           intros.
@@ -423,6 +350,7 @@ Section Step.
           all: reflexivity.
         }
         rewrite Heq; clear Heq.
+        unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -512,7 +440,7 @@ Section Step.
               bindM (step_opcode_mem_st_imm (rBPFValues.sint32_to_vint x5) x6 x0) (fun _ : unit => returnM tt)). {
           clear.
           unfold step_opcode_mem_st_imm, get_opcode_mem_st_imm.
-          unfold bindM, returnM.
+          unfold bindM, returnM. unfold Monad.bindM, Monad.returnM.
           apply Coq.Logic.FunctionalExtensionality.functional_extensionality;
           intros.
           destruct byte_to_opcode_mem_st_imm; try reflexivity.
@@ -526,6 +454,7 @@ Section Step.
           all: reflexivity.
         }
         rewrite Heq; clear Heq.
+        unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -628,7 +557,7 @@ Section Step.
               bindM (step_opcode_mem_st_reg x5 x7 x0) (fun _ : unit => returnM tt)). {
           clear.
           unfold step_opcode_mem_st_reg, get_opcode_mem_st_reg.
-          unfold bindM, returnM.
+          unfold bindM, returnM. unfold Monad.bindM, Monad.returnM.
           apply Coq.Logic.FunctionalExtensionality.functional_extensionality;
           intros.
           destruct byte_to_opcode_mem_st_reg; try reflexivity.
@@ -642,6 +571,7 @@ Section Step.
           all: reflexivity.
         }
         rewrite Heq; clear Heq.
+        unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -719,6 +649,7 @@ Section Step.
 
         change (upd_flag Flag.BPF_ILLEGAL_INSTRUCTION) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_INSTRUCTION) (fun _ : unit => returnM tt)).
+        unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.

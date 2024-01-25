@@ -1,23 +1,4 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import Flag Regs State Monad rBPFMonadOp.
-From bpf.monadicmodel Require Import rBPFInterpreter.
+From bpf.comm Require Import Flag Regs.
 From bpf.monadicmodel Require Import Opcode.
 From Coq Require Import List Lia ZArith.
 From compcert Require Import Integers Values Clight Memory.
@@ -25,12 +6,13 @@ Import ListNotations.
 
 From bpf.clightlogic Require Import Clightlogic CorrectRel CommonLemma CommonLib CommonLemmaNat.
 
-From bpf.clight Require Import interpreter.
-
-From bpf.simulation Require Import correct_get_opcode_branch correct_upd_pc
+From bpf.jit.simulation Require Import correct_get_opcode_branch correct_upd_pc
 correct_upd_flag correct__bpf_get_call correct_cmp_ptr32_nullM correct_exec_function correct_upd_reg.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
+
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 (**
 Check step_opcode_branch.
@@ -52,7 +34,7 @@ Section Step_opcode_branch.
   Definition args : list Type := [(val:Type); (val:Type); (int:Type); (nat:Type)].
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state unit) := step_opcode_branch.
+  Definition f : arrow_type args (M unit) := step_opcode_branch.
 
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
@@ -68,7 +50,7 @@ Section Step_opcode_branch.
                     (DList.DNil _)))))).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state:= fun _ => StateLess _ (eq Vundef).
+  Definition match_res : res -> Inv hybrid_state := fun _ => StateLess _ (eq Vundef).
 
 
   Lemma Cop_add : forall vl1 vl2 m,
@@ -85,7 +67,7 @@ Section Step_opcode_branch.
     correct_body.
 
     unfold f, step_opcode_branch.
-    simpl.
+    simpl. unfold bindM, returnM.
     (** goal: correct_body _ _ (bindM (get_opcode_branch _) ... *)
     correct_forward.
 
@@ -177,7 +159,9 @@ Section Step_opcode_branch.
           apply Int.eq_false.
           apply nat8_neq_k; auto; lia.
         }
-        rewrite Hneq; clear Hneq.
+        rewrite Hneq; clear Hneq. unfold DxNat.nat8_0x05. simpl. unfold Val.of_bool.
+rewrite <- Nat.eqb_neq in Hc2_eq.
+        rewrite Hc2_eq.
         reflexivity.
       + reflexivity.
       + intros.
@@ -890,7 +874,7 @@ Section Step_opcode_branch.
         simpl.
         split; [reflexivity |].
         intros.
-        unfold stateless, val32_correct.
+        unfold stateless, val32_correct, DxValues.uvint_to_svint.
         intuition eauto.
         intros.
 
@@ -917,6 +901,7 @@ Section Step_opcode_branch.
 
         change (upd_flag Flag.BPF_ILLEGAL_CALL) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_CALL) (fun _ : unit => returnM tt)).
+        unfold bindM, returnM.
         correct_forward.
  simpl in H.
         get_invariant _st.
@@ -960,6 +945,7 @@ Section Step_opcode_branch.
           destruct x2; reflexivity.
         }
         rewrite Heq; clear Heq.
+        unfold bindM, returnM.
 
         correct_forward.
  simpl in H.
@@ -1031,6 +1017,9 @@ Section Step_opcode_branch.
           apply nat8_neq_k; auto; lia.
         }
         rewrite Hneq; clear Hneq.
+        unfold DxNat.nat8_0x85.
+        rewrite <- Nat.eqb_neq in Hc2_eq.
+        rewrite Hc2_eq.
         reflexivity.
       + reflexivity.
       + intros.
@@ -1115,6 +1104,9 @@ Section Step_opcode_branch.
           apply nat8_neq_k; auto; lia.
         }
         rewrite Hneq; clear Hneq.
+        unfold DxNat.nat8_0x95.
+        rewrite <- Nat.eqb_neq in Hc2_eq.
+        rewrite Hc2_eq.
         reflexivity.
       + reflexivity.
       + intros.

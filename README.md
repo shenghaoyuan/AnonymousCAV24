@@ -1,6 +1,8 @@
 # End-to-end Mechanized Proof of a JIT-accelerated eBPF Virtual Machine for IoT
 
 This repository contains the version of the verified JIT + HAVM presented in the CAV24 submission 1579.
+
+_considering this anonymized repository can not be downloaded, we provide two zip files(jit.zip and compcert-arm-bin.zip)_
   
 ## Installation
 This repo relies on several existing projects

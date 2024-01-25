@@ -1,23 +1,3 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import Regs State Monad rBPFMonadOp.
-From bpf.monadicmodel Require Import rBPFInterpreter.
 From Coq Require Import List Lia.
 From compcert Require Import Integers Values Memory Clight.
 Import ListNotations.
@@ -25,9 +5,10 @@ Require Import ZArith.
 
 From bpf.clightlogic Require Import Clightlogic CorrectRel CommonLemma.
 
-From bpf.clight Require Import interpreter.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 (**
 int get_immediate(unsigned long long ins)
@@ -53,20 +34,20 @@ Section Get_immediate.
   Definition res : Type := (int:Type).
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := get_immediate.
+  Definition f : arrow_type args (M res) := get_immediate.
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
   Definition fn: Clight.function := f_get_immediate.
 
   (* [match_arg] relates the Coq arguments and the C arguments *)
-  Definition match_arg_list : DList.t (fun x => x -> Inv State.state ) args :=
-    (dcons (fun x => StateLess State.state (int64_correct x))
+  Definition match_arg_list : DList.t (fun x => x -> Inv hybrid_state ) args :=
+    (dcons (fun x => StateLess hybrid_state (int64_correct x))
                 (DList.DNil _)).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state := fun x => StateLess State.state (sint32_correct x).
+  Definition match_res : res -> Inv hybrid_state := fun x => StateLess hybrid_state (sint32_correct x).
 
-  Instance correct_function_get_immediate : forall a, correct_function State.state p args res f fn ModNothing true match_state match_arg_list match_res a.
+  Instance correct_function_get_immediate : forall a, correct_function _ p args res f fn ModNothing true match_state match_arg_list match_res a.
   Proof.
     correct_function_from_body args.
     correct_body.

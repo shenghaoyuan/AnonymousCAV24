@@ -502,7 +502,7 @@ Definition f_jit_call := {|
     (Sbuiltin None
       (EF_exec_binary 4000 (mksignature (AST.Tint :: AST.Tint :: nil)
                              AST.Tint
-                             {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}) 52 (Ptrofs.repr 0))
+                             {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}) 48 (Ptrofs.repr 0))
       (Tcons (tptr tuint) (Tcons (tptr (Tstruct _havm_state noattr)) Tnil))
       ((Ebinop Oadd
          (Efield
@@ -598,8 +598,8 @@ Definition f_get_src32 := {|
   fn_params := ((_st, (tptr (Tstruct _havm_state noattr))) :: (_x, tuchar) ::
                 (_ins, tulong) :: nil);
   fn_vars := nil;
-  fn_temps := ((_imm, tint) :: (_src, tuint) :: (_t'3, tuint) ::
-               (_t'2, tuint) :: (_t'1, tint) :: nil);
+  fn_temps := ((_imm, tint) :: (_src, tuint) :: (_v, tuint) ::
+               (_t'3, tuint) :: (_t'2, tuint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Sifthenelse (Ebinop Oeq (Econst_int (Int.repr 0) tuint)
                (Ebinop Oand (Etempvar _x tuchar)
@@ -618,13 +618,15 @@ Definition f_get_src32 := {|
         ((Etempvar _ins tulong) :: nil))
       (Sset _src (Etempvar _t'2 tuint)))
     (Ssequence
-      (Scall (Some _t'3)
-        (Evar _eval_reg (Tfunction
-                          (Tcons (tptr (Tstruct _havm_state noattr))
-                            (Tcons tuint Tnil)) tuint cc_default))
-        ((Etempvar _st (tptr (Tstruct _havm_state noattr))) ::
-         (Etempvar _src tuint) :: nil))
-      (Sreturn (Some (Etempvar _t'3 tuint))))))
+      (Ssequence
+        (Scall (Some _t'3)
+          (Evar _eval_reg (Tfunction
+                            (Tcons (tptr (Tstruct _havm_state noattr))
+                              (Tcons tuint Tnil)) tuint cc_default))
+          ((Etempvar _st (tptr (Tstruct _havm_state noattr))) ::
+           (Etempvar _src tuint) :: nil))
+        (Sset _v (Etempvar _t'3 tuint)))
+      (Sreturn (Some (Etempvar _v tuint))))))
 |}.
 
 Definition f_get_opcode_ins := {|

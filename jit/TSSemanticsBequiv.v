@@ -388,7 +388,7 @@ Lemma jit_call_simpl_exec_bin_code_equiv:
   (Hsubst : code_subset_in_blk l0 ofs jit_blk m = true)
   (Hexe : exec_bin_code l0 ofs jit_blk rs m = Next rs' m')
   (Hpc_eq : Vint (Int.repr (Z.of_nat v)) = rs BPC)
-  (Hjit_blk : jit_arm_start_address = Vptr jit_blk Ptrofs.zero)
+  (Hjit_blk : jit_arm_block = jit_blk)
   (Hlen_max : Datatypes.length c <= 5000)
   (Hlen: List.length l0 < JITTED_LIST_MAX_LENGTH)
   (Hanalyzer : analyzer c = Some kl)
@@ -417,18 +417,26 @@ Proof.
   erewrite kv_flatten_property; eauto.
 
   unfold exec_bin_code in Hexe.
-  unfold state_block_size in *.
+  unfold state_block_size, stack_block_size in *.
   destruct Mem.alloc eqn: Halloc.
   destruct copy_to as [m1 | ] eqn: Hcopy_to; [| inversion Hexe].
 
   unfold bin_exec.
-  change (Int.unsigned (Int.repr 52%Z)) with 52%Z.
-  unfold stack_block_size in Hexe.
+  change (Int.unsigned (Int.repr 48%Z)) with 48%Z.
+  assert (Heq: Val.add (Vptr jit_blk Ptrofs.zero) (Vint (Int.repr (Z.of_nat (4 * ofs)))) = 
+    Vptr jit_blk (Ptrofs.of_intu (Int.repr (Z.of_nat (4 * ofs))))). {
+    clear.
+    simpl.
+    f_equal.
+    rewrite Ptrofs.add_zero_l.
+    unfold Ptrofs.of_intu.
+    f_equal.
+  }
+  rewrite Heq in Hexe; clear Heq.
   destruct init_state as [ars1 stk1 stkb1 am | ]
     eqn: Hinit_state; [| inversion Hexe].
 
   simpl in Hinit_state.
-  rewrite Ptrofs.add_zero_l in Hinit_state.
 
   assert (Hars_pc: ars1#PC = Cval (Vptr jit_blk
                    (Ptrofs.of_int (Int.repr
@@ -482,7 +490,7 @@ Theorem forward_from_ts_to_interpreter_simpl:
     st1 = State rs1 m1 ->
     st2 = State rs2 m2 ->
 
-    jit_arm_start_address = Vptr jit_blk Ptrofs.zero ->
+    jit_arm_block = jit_blk ->
     Mem.valid_block m1 jit_blk ->
 
     List.length c <= MAX_BPF_LIST_INPUT ->

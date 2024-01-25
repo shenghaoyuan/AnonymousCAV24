@@ -1,34 +1,17 @@
-(**************************************************************************)
-(*  This file is part of CertrBPF,                                        *)
-(*  a formally verified rBPF verifier + interpreter + JIT in Coq.         *)
-(*                                                                        *)
-(*  Copyright (C) 2022 Inria                                              *)
-(*                                                                        *)
-(*  This program is free software; you can redistribute it and/or modify  *)
-(*  it under the terms of the GNU General Public License as published by  *)
-(*  the Free Software Foundation; either version 2 of the License, or     *)
-(*  (at your option) any later version.                                   *)
-(*                                                                        *)
-(*  This program is distributed in the hope that it will be useful,       *)
-(*  but WITHOUT ANY WARRANTY; without even the implied warranty of        *)
-(*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *)
-(*  GNU General Public License for more details.                          *)
-(*                                                                        *)
-(**************************************************************************)
-
-From bpf.comm Require Import Flag Regs State Monad LemmaNat rBPFMonadOp.
-From bpf.monadicmodel Require Import Opcode rBPFInterpreter.
+From bpf.comm Require Import Flag Regs LemmaNat.
+From bpf.monadicmodel Require Import Opcode.
 From Coq Require Import List Lia ZArith.
 From compcert Require Import Integers Values Clight Memory.
 Import ListNotations.
 
 From bpf.clightlogic Require Import Clightlogic CorrectRel CommonLemma.
 
-From bpf.clight Require Import interpreter.
+From bpf.jit.simulation Require Import correct_get_opcode_mem_st_reg correct_check_mem correct_cmp_ptr32_nullM correct_upd_flag correct_store_mem.
 
-From bpf.simulation Require Import correct_get_opcode_mem_st_reg correct_check_mem correct_cmp_ptr32_nullM correct_upd_flag correct_store_mem.
+From bpf.jit.jitclight Require Import havm_interpreter.
+From bpf.jit.havm Require Import HAVMState HAVMMonadOp DxHAVMInterpreter.
 
-From bpf.simulation Require Import MatchState InterpreterRel.
+From bpf.jit.simulation Require Import MatchStateComm HAVMMatchState InterpreterRel.
 
 
 (**
@@ -50,7 +33,7 @@ Section Step_opcode_mem_st_reg.
   Definition res : Type := unit.
 
   (* [f] is a Coq Monadic function with the right type *)
-  Definition f : arrow_type args (M State.state res) := step_opcode_mem_st_reg.
+  Definition f : arrow_type args (M res) := step_opcode_mem_st_reg.
 
   (* [fn] is the Cligth function which has the same behaviour as [f] *)
   Definition fn: Clight.function := f_step_opcode_mem_st_reg.
@@ -64,7 +47,7 @@ Section Step_opcode_mem_st_reg.
             (DList.DNil _))))).
 
   (* [match_res] relates the Coq result and the C result *)
-  Definition match_res : res -> Inv State.state := fun _ => StateLess _ (eq Vundef).
+  Definition match_res : res -> Inv hybrid_state := fun _ => StateLess _ (eq Vundef).
 
   Instance correct_function_step_opcode_mem_st_reg : forall a, correct_function _ p args res f fn ModSomething false match_state match_arg_list match_res a.
   Proof.
@@ -74,6 +57,7 @@ Section Step_opcode_mem_st_reg.
     unfold INV.
     unfold f, app, step_opcode_mem_st_reg.
     simpl.
+    unfold bindM, returnM.
     correct_forward.
 
     get_invariant _op.
@@ -124,6 +108,7 @@ Section Step_opcode_mem_st_reg.
 
         change (upd_flag Flag.BPF_ILLEGAL_MEM) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_MEM) (fun _ : unit => returnM tt)).
+    unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -208,6 +193,7 @@ Section Step_opcode_mem_st_reg.
 
         change (upd_flag Flag.BPF_ILLEGAL_MEM) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_MEM) (fun _ : unit => returnM tt)).
+    unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -290,6 +276,7 @@ Section Step_opcode_mem_st_reg.
 
         change (upd_flag Flag.BPF_ILLEGAL_MEM) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_MEM) (fun _ : unit => returnM tt)).
+    unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.
@@ -380,6 +367,7 @@ Section Step_opcode_mem_st_reg.
 
         change (upd_flag Flag.BPF_ILLEGAL_INSTRUCTION) with
           (bindM (upd_flag Flag.BPF_ILLEGAL_INSTRUCTION) (fun _ : unit => returnM tt)).
+    unfold bindM, returnM.
         correct_forward.
 
         get_invariant _st.

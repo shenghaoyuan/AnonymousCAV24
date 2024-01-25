@@ -112,7 +112,7 @@ static __attribute__((always_inline)) inline void jit_call(struct havm_state* st
   unsigned int ofs;
   ofs = (*st).tp_kv[(*st).pc_loc].arm_ofs;
   //_magic_function(ofs, st);
-  __builtin_execbin(4000U, 52U, 0U, (*st).tp_bin + ofs, st);
+  __builtin_execbin(4000U, 48U, 0U, (*st).tp_bin + ofs, st);
   //(*st).tp_bin + ofs, st
   (*st).pc_loc += (*st).tp_kv[(*st).pc_loc].alu32_ofs;
   return ;

@@ -100,15 +100,15 @@ SIMULATION= MatchStateComm.v HAVMMatchState.v InterpreterRel.v \
     correct_check_pc.v correct_upd_pc.v correct_check_pc_incr.v correct_eval_reg.v correct_upd_reg.v correct_eval_flag.v correct_upd_flag.v \
     correct_eval_mrs_num.v correct_eval_mrs_regions.v correct_load_mem.v correct_store_mem.v \
     correct_eval_ins.v correct_cmp_ptr32_nullM.v correct_get_dst.v correct_get_src.v correct_get_mem_region.v \
-    correct__bpf_get_call.v correct_exec_function.v  \
-    correct_get_offset.v #correct_get_immediate.v correct_get_src32.v \
-    #correct_get_opcode_ins.v correct_get_opcode_alu32.v correct_get_opcode_branch.v \
-    #correct_get_opcode_mem_ld_reg.v correct_get_opcode_mem_st_imm.v correct_get_opcode_mem_st_reg.v correct_get_opcode_nat.v \
-    #correct_get_add.v correct_get_sub.v correct_get_addr_ofs.v correct_get_start_addr.v correct_get_block_size.v correct_get_block_perm.v \
-    #correct_check_mem_aux2.v correct_check_mem_aux.v correct_check_mem.v \
-    #correct_step_opcode_alu32.v correct_step_opcode_branch.v \
-    #correct_step_opcode_mem_ld_reg.v correct_step_opcode_mem_st_reg.v correct_step_opcode_mem_st_imm.v \
-    #correct_step.v correct_bpf_interpreter_aux.v correct_bpf_interpreter.v
+    correct__bpf_get_call.v correct_exec_function.v correct_jit_call_ax.v  \
+    correct_get_offset.v correct_get_immediate.v correct_get_src32.v \
+    correct_get_opcode_ins.v correct_get_opcode_branch.v \
+    correct_get_opcode_mem_ld_reg.v correct_get_opcode_mem_st_imm.v correct_get_opcode_mem_st_reg.v correct_get_opcode_nat.v \
+    correct_get_add.v correct_get_sub.v correct_get_addr_ofs.v correct_get_start_addr.v correct_get_block_size.v correct_get_block_perm.v \
+    correct_check_mem_aux2.v correct_check_mem_aux.v correct_check_mem.v \
+    correct_step_opcode_branch.v \
+    correct_step_opcode_mem_ld_reg.v correct_step_opcode_mem_st_reg.v correct_step_opcode_mem_st_imm.v \
+    correct_step.v correct_bpf_interpreter_aux.v correct_bpf_interpreter.v
 
 # correct_jit_call.v
 COQCOMM = $(addprefix comm/, $(COMM))

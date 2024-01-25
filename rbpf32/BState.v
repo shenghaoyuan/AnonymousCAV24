@@ -172,10 +172,9 @@ Definition jit_call_simplb (kv: list nat) (rs: regset) (m: mem): option (regset 
         match copy_to rs st_blk m1 with
         | None => None
         | Some m2 =>
-          let jitted_arm_address := Val.add jit_arm_start_address
-            (Vint (Int.repr (Z.of_nat (4* ofs)))) (*
-            (Vint (Int.mul (Int.repr (Z.of_nat ofs)) (Int.repr 2))) *) in
-          let arm_argu_list_val := [jitted_arm_address; (Vptr st_blk Ptrofs.zero)] in
+          let arm_argu_list_val :=
+            [ (Vptr jit_arm_block (Ptrofs.of_intu (Int.repr (Z.of_nat (4* ofs)))));
+              (Vptr st_blk Ptrofs.zero)] in
             match bin_exec fuel compcertbin_signature (Int.unsigned sz)
               Ptrofs.zero arm_argu_list_val m2 with
             | None => None
